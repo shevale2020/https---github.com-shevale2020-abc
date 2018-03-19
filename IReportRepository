@@ -1,0 +1,20 @@
+using ECloseBL.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks; 
+
+namespace ECloseWebAPI.Repositories.Interfaces
+{
+    public interface IReportRepository
+    {
+
+        List<TATReportData> GetTATData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role);
+        List<HoldReportData> GetHoldData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role);
+        List<RejectReportData> GetRejectData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role);
+        List<ReportData_Status> GetTasksData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role);
+        List<Workitems> GetExceptionalTaskReport(int locationId, int tenantId, int teamId, string period, int userId, string role);
+        List<dynamic> GetTaskTimelineChartReport(ECloseWebAPI.Models.Period entity);
+    }
+}
