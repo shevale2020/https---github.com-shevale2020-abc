@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .node {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+
+        .link {
+            stroke: #999;
+            stroke-opacity: .6;
+        }
+
+
+        .axis {
+            font: 10px sans-serif;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            user-select: none;
+        }
+
+            .axis .domain {
+                fill: none;
+                stroke: #000;
+                stroke-opacity: .3;
+                stroke-width: 10px;
+                stroke-linecap: round;
+            }
+
+            .axis .halo {
+                fill: none;
+                stroke: #ddd;
+                stroke-width: 10px;
+                stroke-linecap: square;
+            }
+
+        .slider .handle {
+            fill: #fff;
+            stroke: #000;
+            stroke-opacity: .9;
+            stroke-width: 1.25px;
+            cursor: crosshair;
+        }
+
+        .sliderlabel {
+            font: 12px sans-serif;
+            color: #CCC;
+            text-align: left;
+            font-size: 12px;
+        }
+
+
+        .title {
+            color: #CCC;
+            font-size: 25px;
+            font-family: "Helvetica";
+        }
+
+
+        .legend {
+            color: #CCC;
+            text-align: left;
+            font-size: 15px;
+            font-family: "Helvetica";
+        }
+    </style>
+    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <script src="~/Scripts/bootstrap.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
+   
+    <script src="~/Scripts/d3.v3.min.js"></script>
+   
+   
+</head>
+<body>
+
+    <form action="/Report/GetReportData">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3">
+                    <label>Location</label>
+                    <select title="Location" id="LocationId" name="LocationId">
+                        <option value="0">All</option>
+                        <option value="186">WNS NA - US</option>
+                        <option value="2">WNS NA - Canada</option>
+                        <option value="1">WNS IND - Mumbai</option>
+                        <option value="59">WNS-IND-Pune</option>
+                        <option value="14">WNS-IND-Canada</option>
+                    </select>
+                </div>
+                <div class="col-lg-3">
+                    <label>Period</label>
+                    <select title="Period" id="PeriodId" name="PeriodId">
+                        <option value="0">All</option>
+                        <option value="83">Jan-2017</option>
+                        <option value="1">Feb-2017</option>
+                        <option value="2">March-2017</option>
+                        <option value="39">April-2017</option>
+                        <option value="16">May-2017</option>
+                    </select>
+                </div>
+                    <button type="button" onclick="updateDate()">Show </button>
+
+                    <div id="wrapper" align="center">
+                    </div>
+                </div>
+        </div>
+    </form>
+</body>
+</html>
+
+    <script>
+            (function () {
+                updateDate();
+
+            })();
+
+
+            
+            function updateDate() {
+               
+                var width = 600,
+                    height = 600;
+                var color = d3.scale.category10();
+                var graphdata;
+                var graphRec;
+                var link;
+                var node;
+                var jsonData = [];
+                var force = d3.layout.force()
+                    .charge(-60)
+                    .linkDistance(30)
+                    .size([width, height]);
+
+                var svg = d3.select("#wrapper").append("svg")
+                    .attr("width", width)
+                    .attr("height", height);
+
+
+                svg.append("rect")
+                    .attr("width", "100%")
+                    .attr("height", "100%")
+                    .attr("fill", "#F7F7F7");
+
+                var url = "/Report/GetReportData";
+                var urlParam ="";
+                //here add a filter
+                if (document.getElementById('LocationId').value != "0" && document.getElementById('PeriodId').value != "0") {
+                    url += "?LocationId=" + document.getElementById('LocationId').value;
+                    url += "&PeriodId=" + document.getElementById('PeriodId').value;
+                   alert(url);
+                }
+
+                 d3.json(url , function (error, graph) {
+                    alert(error)
+                    alert(graph);
+                    graph = egraph;
+                    jsonData = JSON.parse(graph);
+                    graphdata = jsonData;
+                    graphRec = JSON.parse(JSON.stringify(graphdata)); 
+                    console.log(graph);
+
+                    force.nodes(graphdata.nodes)
+                        .links(graphdata.links)
+                        .start();
+
+                    link = svg.selectAll(".link")
+                        .data(jsonData.links)
+                        .enter().append("line")
+                        .attr("class", "link")
+                        .style("stroke-width", function (d) { return 2; });
+
+                    node = svg.selectAll(".node")
+                        .data(jsonData.nodes)
+                        .enter().append("circle")
+                        .attr("class", "node")
+                        .attr("r", 5)
+                        .style("fill", function (d) { return (color(d.color)); })
+                        .call(force.drag);
+
+                    node.append("SVG:title")
+                        .text(function (d) { return d.Task }); //{ return d.Task + " (" + String(d.Day) + ")"; });
+
+
+                    force.on("tick", function () {
+                        link.attr("x1", function (d) { return d.source.x; })
+                            .attr("y1", function (d) { return d.source.y; })
+                            .attr("x2", function (d) { return d.target.x; })
+                            .attr("y2", function (d) { return d.target.y; });
+
+                        node.attr("cx", function (d) { return d.x; })
+                            .attr("cy", function (d) { return d.y; });
+                    });
+
+
+                    var colordata = jsonData.colordata;
+                    //   console.log(graphRec.colordata);
+
+                    var legend = svg.selectAll('.legend')
+                        .data(colordata)
+                        .enter().append('g')
+                        .attr('class', 'legend')
+                        .attr('ID', function (d) { return d.name })
+                        .attr("transform", function (d, i) {
+                            return "translate(" + 60 + "," + (i + 3) * 30 + ")";
+                        });
+
+                    legend.append("rect")
+                        .attr('width', 15).attr('height', 15)
+                        .style('fill', function (d) {
+                            return color(d.value);
+                        });
+
+                    legend.append("text")
+                        .attr('x', 25).attr('y', 15)
+                        .text(function (d) { return d.name; })
+                        .attr("stroke", "black");
+
+
+                });
+
+                // add title
+                svg.append("text").attr("class", "title").attr("x", width / 2).attr("y", 50).attr("text-anchor", "middle").text("Team and Task Dependancy")
+
+                //adjust year
+                function threshold(thresh) {
+                    graphdata.links.splice(0, graphdata.links.length);
+                    for (var i = 0; i < graphRec.links.length; i++) {
+                        if (graphRec.links[i].Year <= thresh) { graphdata.links.push(graphRec.links[i]); }
+                    }
+
+                    node.style("visibility", function (d) { return (d.cYear > thresh ? "hidden" : "visible"); });
+
+                    restart();
+
+                }
+
+                //Restart the visualisation after any node and link changes
+                function restart() {
+                    link = link.data(graphdata.links);
+                    link.exit().remove();
+                    link.enter().insert("line", ".node").attr("class", "link").style("stroke-width", function (d) { return 2; });
+
+                    link.append("SVG:title")
+                        .text(function (d) { return d.Year; });
+
+                    force.start();
+                }
+
+                // the brush - slider
+                var x = d3.scale.linear()
+                    .domain([1, 31])
+                    .range([50, width - 50])
+                    .clamp(true);
+
+                var brush = d3.svg.brush()
+                    .x(x)
+                    .extent([31, 31])
+                    .on("brush", brushed);
+
+                svg.append("g")
+                    .attr("class", "x axis")
+                    .attr("transform", "translate(0," + (height - 40) + ")")
+                    .call(d3.svg.axis()
+                        .scale(x)
+                        .orient("bottom")
+                        .tickFormat(function (d) { return d; })
+                        .tickSize(0)
+                        .tickPadding(12))
+                    .select(".domain")
+                    .select(function () { return this.parentNode.appendChild(this.cloneNode(true)); })
+                    .attr("class", "halo");
+
+                var slider = svg.append("g")
+                    .attr("class", "slider")
+                    .call(brush);
+
+                slider.selectAll(".extent,.resize")
+                    .remove();
+
+                slider.select(".background")
+                    .attr("height", height);
+
+                var handle = slider.append("g")
+                    .attr("class", "handle")
+                    .attr("transform", "translate(-20," + (height - 40 - 10) + ")");
+
+                handle.append("rect")
+                    .attr("width", 40)
+                    .attr("height", 18);
+
+                handle.append("text")
+                    .text("2013")
+                    .attr("y", 13)
+                    .attr("x", 7)
+                    .attr("class", "sliderlabel");
+
+                slider
+                    .call(brush.event)
+                    .transition() // gratuitous intro!
+                    .duration(750)
+                    .call(brush.event);
+
+                function brushed() {
+                    var value = brush.extent()[0];
+
+                    if (d3.event.sourceEvent) { // not a programmatic event
+                        value = x.invert(d3.mouse(this)[0]);
+                        brush.extent([value, value]);
+                        threshold(value);
+                    }
+                    handle.attr("transform", "translate(" + (x(value) - 20) + "," + (height - 40 - 10) + ")");
+                    handle.select("text").text(String(Math.floor(value)));
+                }
+            }
+
+    </script>
