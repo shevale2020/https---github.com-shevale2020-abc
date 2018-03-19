@@ -1,0 +1,150 @@
+using System;
+using System.Collections.Generic;
+using System.Web.Http;
+using System.Web.Http.Description;
+using ECloseWebAPI.Entities;
+using ECloseWebAPI.Repositories.Interfaces;
+using ECloseBL.Entities;
+namespace ECloseWebAPI.Controllers
+{
+    public class ReportController : ApiController
+    {
+        log4net.ILog logger = log4net.LogManager.GetLogger(typeof(LoginController));  //Declaring Log4Net 
+        private IReportRepository _repository;
+        public ReportController(IReportRepository repository)
+        {
+            _repository = repository;
+        }
+        [ResponseType(typeof(List<TATReportData>))]
+        [System.Web.Http.AcceptVerbs("GET")]
+        [Route("Report/GetTATData")]
+        public IHttpActionResult GetTATData(int PeriodId,int BUId,int LocationId,int TeamId, int UserId, string Role)
+        {
+            try
+            {
+                var dataForTATReport = _repository.GetTATData(PeriodId, BUId, LocationId, TeamId, UserId, Role);
+                return Ok(dataForTATReport);
+            }
+            catch (Exception ex)
+            {
+                Messages objmessage = new Messages();
+                objmessage.sts = "300";
+                objmessage.msg = ex.Message.ToString();
+                return Ok(objmessage);
+            }
+
+        }
+
+        [ResponseType(typeof(List<HoldReportData>))]
+        [System.Web.Http.AcceptVerbs("GET")]
+        [Route("Report/GetHoldData")]
+        public IHttpActionResult GetHoldData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role)
+        {
+            try
+            {
+                var dataForHoldReport = _repository.GetHoldData(PeriodId, BUId, LocationId, TeamId, UserId, Role);
+                return Ok(dataForHoldReport);
+            }
+            catch (Exception ex)
+            {
+                Messages objmessage = new Messages();
+                objmessage.sts = "300";
+                objmessage.msg = ex.Message.ToString();
+                return Ok(objmessage);
+            }
+
+        }
+
+        [ResponseType(typeof(List<RejectReportData>))]
+        [System.Web.Http.AcceptVerbs("GET")]
+        [Route("Report/GetRejectData")]
+        public IHttpActionResult GetRejectData(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role)
+        {
+            try
+            {
+                var dataForRejectReport = _repository.GetRejectData(PeriodId,BUId, LocationId, TeamId, UserId, Role);
+                return Ok(dataForRejectReport);
+            }
+            catch (Exception ex)
+            {
+                Messages objmessage = new Messages();
+                objmessage.sts = "300";
+                objmessage.msg = ex.Message.ToString();
+                return Ok(objmessage);
+            }
+
+        }
+
+        [ResponseType(typeof(List<ReportData_Status>))]
+        [System.Web.Http.AcceptVerbs("GET")]
+        [Route("Report/GetTasksStatus")]
+        public IHttpActionResult GetTasksStatus(int PeriodId, int BUId, int LocationId, int TeamId, int UserId, string Role)
+        {
+            try
+            {
+                var dataForAdhocReport = _repository.GetTasksData(PeriodId, BUId, LocationId, TeamId, UserId, Role);
+                return Ok(dataForAdhocReport);
+            }
+            catch (Exception ex)
+            {
+                Messages objmessage = new Messages();
+                objmessage.sts = "300";
+                objmessage.msg = ex.Message.ToString();
+                return Ok(objmessage);
+            }
+
+        }
+
+        /// <summary>
+        ///Exceptional task Report 
+        /// </summary>
+        /// <param name="locationId">UserId</param>
+        /// <param name="tenantId">Tenant Id</param>
+        ///<param name="teamId">priorityId</param>
+        /// <param name="period">period</param>
+        /// <returns>list<Workitems></returns>
+        [System.Web.Http.AcceptVerbs("GET", "POST")]
+        public IHttpActionResult GetExceptionalTaskReport(int locationId, int tenantId, int teamId, string period,int userId, string role)
+        {
+            try
+            {
+                var result = _repository.GetExceptionalTaskReport( locationId, tenantId, teamId, period, userId, role);
+                return Ok(result);
+            }
+            catch (Exception ex) { logger.Error(ex.ToString()); return Json(new { Result = "ERROR", Message = ex.Message }); }
+        }
+
+        //[System.Web.Http.AcceptVerbs("GET", "POST")]
+        //public IHttpActionResult GetTaskTimelineChartReport(int locationId, int periodId)
+        //{
+        //    try
+        //    {
+        //        var result = _repository.GetTaskTimelineChartReport(locationId, periodId);
+        //        return Ok(result);
+        //    }
+        //    catch (Exception ex) { logger.Error(ex.ToString()); return Json(new { Result = "ERROR", Message = ex.Message }); }
+        //}
+
+
+       
+        [ResponseType(typeof(List<Task>))]
+        [System.Web.Http.AcceptVerbs("GET")]
+        [Route("api/Report/GetTaskTimelineChartReport")]
+        public IHttpActionResult GetTaskTimelineChartReport(ECloseWebAPI.Models.Period entity)
+        {
+            try
+            {
+                var Task = _repository.GetTaskTimelineChartReport(entity);
+                return Ok(Task);
+            }
+            catch (Exception ex)
+            {
+                Messages objmessage = new Messages();
+                objmessage.sts = "300";
+                objmessage.msg = ex.Message.ToString();
+                return Ok(objmessage);
+            }
+
+        }
+    }
+}
