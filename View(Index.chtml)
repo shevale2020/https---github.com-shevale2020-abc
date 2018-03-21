@@ -1,0 +1,143 @@
+@{
+    ViewBag.Title = "Home Page";
+}
+
+
+<!doctype html>
+<html>
+
+<head>
+    <style>
+        path {
+            fill: none;
+            stroke: black;
+        }
+        body {
+            background: #fff;
+        }
+    </style>
+    <title>Line Chart</title>
+    <script src="~/Scripts/d3.v3.min.js"></script>
+</head>
+<body>
+    <script>
+     
+        d3.json("/Home/filterdata", function (data) {
+            //convert string data into json
+            data = JSON.parse(data)
+            var format = d3.time.format("%d/%m/%Y");
+            // x axis scal min and maximum data ...if yoy to do this dynamaic send the data for json assign here 
+            var dateMin = format.parse("20/03/2017");
+            var dateMax = format.parse("01/07/2017");
+
+            var margin = {
+                top: 20,
+                right: 20,
+                bottom: 30,
+                left: 120
+            },
+                width = 960 - margin.left - margin.right,
+                height = 500 - margin.top - margin.bottom;
+            var xValue = function (d) {
+                return format.parse(d.TaskDate);
+            }, // data -> value
+                xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width]), // value -> display
+                xMap = function (d) {
+                    console.log(xScale.domain()[1].toISOString());
+                    return xScale(xValue(d));
+                }, // data -> display
+                xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+            var yValue = function (d) {
+                return d.TaskNumber;
+            }, // data -> value
+                yScale = d3.scale.linear().range([height, 0]), // value -> display
+                yMap = function (d) {
+                    return yScale(yValue(d));
+                }, // data -> display
+                yAxis = d3.svg.axis().scale(yScale).orient("left");
+            // setup fill color
+            var cValue = function (d) {
+                return d.ownership;
+            },
+                color = d3.scale.category10();
+            // add the graph canvas to the body of the webpage
+            var svg = d3.select("body").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // add the tooltip area to the webpage
+            var tooltip = d3.select("body").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // don't want dots overlapping axis, so add in buffer to data domain
+            xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
+            yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 10]);
+
+            //x-axis name
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width)
+                .attr("y", -6)
+                .style("text-anchor", "end")
+                .text("Task End Date");
+
+            // y-axis name
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("No of Task");
+
+            // draw dots
+            svg.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("r", 3.5)
+                .attr("cx", xMap)
+                .attr("cy", yMap)
+                .style("fill", function (d) {
+                    return color(cValue(d));
+                })
+                .on("mouseover", function (d) {
+                    tooltip.transition()
+                        .duration(200)
+                        .style("opacity", 0.9);
+                    tooltip.html(d.TaskTitle + "<br/> (" + xValue(d) + ", " + yValue(d) + ")")
+                        .style("left", (d3.event.pageX + 5) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                })
+                .attr('data-title', function (e) {
+                    return e.TaskTitle;
+                })
+                .attr('data-value', function (e) {
+                    return e.TaskNumber;
+                })
+                .attr('data-date', function (e) {
+                    return e.TaskDate;
+                })
+                .attr('data-sqft', function (e) {
+                    return e.extra;
+                });
+        })
+    </script>
+    </body>
+
+</html>
