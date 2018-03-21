@@ -1,12 +1,17 @@
 
+
 <!doctype html>
 <html>
 
 <head>
     <title>Line Chart</title>
-    @*<script src="../../../../dist/2.7.2/Chart.bundle.js"></script>*@
+    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
+    <script src="~/Scripts/bootstrap.js"></script>
+    <script src="~/Scripts/bootstrap.min.js"></script>
     <script src="~/Scripts/Chart.min.js"></script>
     <script src="~/Scripts/utils.js"></script>
+    
     @*<script src="../../utils.js"></script>*@
     <style>
         canvas {
@@ -33,28 +38,80 @@
 
 <body>
     <div class="container">
+        <div class="col-lg-12">
+            <br />
+            <br />
+            <br />
+            <div class="row">
+                <form action="/Report/GetReportData">
+
+                    <div class="col-lg-3">
+                        <label>Location</label>
+                        <select title="Location" id="LocationId" name="LocationId">
+                            <option value="0">All</option>
+                            <option value="186">WNS NA - US</option>
+                            <option value="2">WNS NA - Canada</option>
+                            <option value="1">WNS IND - Mumbai</option>
+                            <option value="59">WNS-IND-Pune</option>
+                            <option value="14">WNS-IND-Canada</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3">
+                        <label>Period</label>
+                        <select title="Period" id="PeriodId" name="PeriodId">
+                            <option value="0">All</option>
+                            <option value="83">Jan-2017</option>
+                            <option value="1">Feb-2017</option>
+                            <option value="2">March-2017</option>
+                            <option value="39">April-2017</option>
+                            <option value="16">May-2017</option>
+                        </select>
+                    </div>
+                    <div class="col-lg-3">
+                        <label>Team</label>
+                        <select title="Period" id="PeriodId" name="PeriodId">
+                            <option value="0">All</option>
+                            <option value="83">ABC</option>
+                            <option value="1">XYZ</option>
+
+                        </select>
+                    </div>
+                    <button type="button" onclick="updateDate()">Show </button>
+
+
+                </form>
+            </div>
+            <br />
+            <br />
+            <br />
+            <div class="row">
+                <div class="container">
+                </div>
+            </div>
+        </div>
     </div>
+   
     <script>
-		function createConfig(pointStyle) {
-			return {
-				type: 'line',
-				data: {
-					labels: ['1/1/2017', '2/1/2017', '3/1/2017', '4/1/2017', '5/1/2017', '6/1/2017', '7/1/2017'],
-					datasets: [{
-						label: 'Task Name',
-						backgroundColor: window.chartColors.red,
-						borderColor: window.chartColors.red,
-						data: [1,1,1,1,1,1,1],
-						fill: false,
-						pointRadius: 5,
-						pointHoverRadius: 5,
-						showLine: false // no line shown
-					},
+        function createConfig(pointStyle) {
+            return {
+                type: 'line',
+                data: {
+                    labels: ['1/1/2017', '2/1/2017', '3/1/2017', '4/1/2017', '5/1/2017', '6/1/2017', '7/1/2017'],
+                    datasets: [{
+                        label: 'Task Name',
+                        backgroundColor: window.chartColors.red,
+                        borderColor: window.chartColors.red,
+                        data: [1, 1, 1, 1, 1, 1, 1],
+                        fill: false,
+                        pointRadius: 5,
+                        pointHoverRadius: 5,
+                        showLine: false // no line shown
+                    },
 					{
 					    label: 'Task Name',
 					    backgroundColor: window.chartColors.green,
 					    borderColor: window.chartColors.green,
-					    data: [2,,2,2,,2,2],
+					    data: [2, , 2, 2, , 2, 2],
 					    fill: false,
 					    pointRadius: 5,
 					    pointHoverRadius: 15,
@@ -64,7 +121,7 @@
 					    label: 'Task Name',
 					    backgroundColor: window.chartColors.yellow,
 					    borderColor: window.chartColors.yellow,
-					    data: [3,,,3,,,3],
+					    data: [3, , , 3, , , 3],
 					    fill: false,
 					    pointRadius: 5,
 					    pointHoverRadius: 15,
@@ -74,37 +131,37 @@
 					    label: 'Task Name',
 					    backgroundColor: window.chartColors.blue,
 					    borderColor: window.chartColors.blue,
-					    data: [,,,,,,4 ],
+					    data: [, , , , , , 4],
 					    fill: false,
 					    pointRadius: 5,
 					    pointHoverRadius: 15,
 					    showLine: false // no line shown
 					}
-                        ],
-				
+                    ],
 
-				},
-				options: {
-					responsive: true,
-					title: {
-						display: true,
-						text: 'Team: ' + 'Task'
-					},
-					legend: {
-						display: false
-					},
-					elements: {
-						point: {
-							pointStyle: pointStyle
-						}
-					}
-				}
-			};
-		}
 
-		window.onload = function() {
-			var container = document.querySelector('.container');
-			[
+                },
+                options: {
+                    responsive: true,
+                    title: {
+                        display: true,
+                        text: 'Team: ' + 'Task'
+                    },
+                    legend: {
+                        display: false
+                    },
+                    elements: {
+                        point: {
+                            pointStyle: pointStyle
+                        }
+                    }
+                }
+            };
+        }
+
+        window.onload = function () {
+            var container = document.querySelector('.container');
+            [
 				'circle',
 				//'triangle',
 				//'rect',
@@ -115,19 +172,19 @@
 				//'star',
 				//'line',
 				//'dash'
-			].forEach(function(pointStyle) {
-				var div = document.createElement('div');
-				div.classList.add('chart-container');
+            ].forEach(function (pointStyle) {
+                var div = document.createElement('div');
+                div.classList.add('chart-container');
 
-				var canvas = document.createElement('canvas');
-				div.appendChild(canvas);
-				container.appendChild(div);
+                var canvas = document.createElement('canvas');
+                div.appendChild(canvas);
+                container.appendChild(div);
 
-				var ctx = canvas.getContext('2d');
-				var config = createConfig(pointStyle);
-				new Chart(ctx, config);
-			});
-		};
+                var ctx = canvas.getContext('2d');
+                var config = createConfig(pointStyle);
+                new Chart(ctx, config);
+            });
+        };
     </script>
 </body>
 
