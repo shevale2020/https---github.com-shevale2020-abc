@@ -68,13 +68,13 @@
 
                 yAxis = d3.svg.axis().scale(yScale).orient("left");
 
-            //var line = d3.svg.line()
-            //            .x(function (d) { return x(d.time); })
-            //            .y(function (d) { return y(d.value1); });
+            var line = d3.svg.line()
+                        .x(function (d) { return x(d.time); })
+                        .y(function (d) { return y(d.value1); });
 
-            //var line2 = d3.svg.line()
-            //            .x(function (d) { return x(d.time); })
-            //            .y(function (d) { return y(d.value2); });
+            var line2 = d3.svg.line()
+                        .x(function (d) { return x(d.time); })
+                        .y(function (d) { return y(d.value2); });
 
             // setup fill color
             var cValue = function (d) {
