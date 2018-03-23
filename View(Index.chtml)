@@ -12,6 +12,7 @@
             fill: none;
             stroke: black;
         }
+
         body {
             background: #fff;
         }
@@ -21,12 +22,15 @@
 </head>
 <body>
     <script>
-     
-        d3.json("/Home/filterdata", function (data) {
+
+        d3.json("/Report/filterdata", function (data) {
+
             //convert string data into json
             data = JSON.parse(data)
+
             var format = d3.time.format("%d/%m/%Y");
-            // x axis scal min and maximum data ...if yoy to do this dynamaic send the data for json assign here 
+
+            // x axis scal min and maximum data ...if yoy to do this dynamaic send the data for json assign here
             var dateMin = format.parse("20/03/2017");
             var dateMax = format.parse("01/07/2017");
 
@@ -36,30 +40,48 @@
                 bottom: 30,
                 left: 120
             },
+
                 width = 960 - margin.left - margin.right,
                 height = 500 - margin.top - margin.bottom;
             var xValue = function (d) {
                 return format.parse(d.TaskDate);
             }, // data -> value
+
                 xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width]), // value -> display
+
                 xMap = function (d) {
                     console.log(xScale.domain()[1].toISOString());
                     return xScale(xValue(d));
                 }, // data -> display
+
                 xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+
             var yValue = function (d) {
                 return d.TaskNumber;
             }, // data -> value
+
                 yScale = d3.scale.linear().range([height, 0]), // value -> display
+
                 yMap = function (d) {
                     return yScale(yValue(d));
                 }, // data -> display
+
                 yAxis = d3.svg.axis().scale(yScale).orient("left");
+
+            //var line = d3.svg.line()
+            //            .x(function (d) { return x(d.time); })
+            //            .y(function (d) { return y(d.value1); });
+
+            //var line2 = d3.svg.line()
+            //            .x(function (d) { return x(d.time); })
+            //            .y(function (d) { return y(d.value2); });
+
             // setup fill color
             var cValue = function (d) {
                 return d.ownership;
             },
                 color = d3.scale.category10();
+
             // add the graph canvas to the body of the webpage
             var svg = d3.select("body").append("svg")
                 .attr("width", width + margin.left + margin.right)
@@ -74,7 +96,7 @@
 
             // don't want dots overlapping axis, so add in buffer to data domain
             xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
-            yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 10]);
+            yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 5]);
 
             //x-axis name
             svg.append("g")
@@ -98,7 +120,7 @@
                 .attr("y", 6)
                 .attr("dy", ".71em")
                 .style("text-anchor", "end")
-                .text("No of Task");
+                .text("Task No");
 
             // draw dots
             svg.selectAll(".dot")
@@ -110,15 +132,16 @@
                 .attr("cy", yMap)
                 .style("fill", function (d) {
                     return color(cValue(d));
-                })
-                .on("mouseover", function (d) {
-                    tooltip.transition()
-                        .duration(200)
-                        .style("opacity", 0.9);
-                    tooltip.html(d.TaskTitle + "<br/> (" + xValue(d) + ", " + yValue(d) + ")")
-                        .style("left", (d3.event.pageX + 5) + "px")
-                        .style("top", (d3.event.pageY - 28) + "px");
-                })
+                }).append("title")
+                    .text(function (d) { return (d.TaskTitle + "(" + xValue(d) + ", " + yValue(d) + ")") })
+                //.on("mouseover", function (d) {
+                //    tooltip.transition()
+                //        .duration(200)
+                //        .style("opacity", 0.9);
+                //    tooltip.html(d.TaskTitle + "<br/> (" + xValue(d) + ", " + yValue(d) + ")")
+                //        //.style("left", (d3.event.pageX + 5) + "px")
+                //        //.style("top", (d3.event.pageY - 28) + "px");
+                //})
                 .on("mouseout", function (d) {
                     tooltip.transition()
                         .duration(500)
@@ -136,8 +159,12 @@
                 .attr('data-sqft', function (e) {
                     return e.extra;
                 });
+          
         })
     </script>
-    </body>
+</body>
 
 </html>
+
+
+
