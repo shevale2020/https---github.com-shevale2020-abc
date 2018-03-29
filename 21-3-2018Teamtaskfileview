@@ -294,43 +294,7 @@
                 .style("text-anchor", "end")
                  .text(function (d) { return (d); })
 
-            var line = d3.svg.line()
-            .x(function (d) { return x(d.x); })
-            .y(function (d) { return y(d.y); });
-            var w = 500;
-            var h = 300;
-            var padding = 20;
-
-            var parseDate = d3.time.format("%m-%Y").parse;
-            var mindate = parseDate("01-2000"),
-                maxdate = parseDate("01-2015");
-
-            var xScale = d3.time.scale()
-                .domain([mindate, maxdate])
-                .range([padding, w - padding * 2]);
-
-            var yScale = d3.scale.linear()
-                .domain([0, d3.max(dataset, function (d) {
-                    return d[1];
-                })])
-                .range([0, h]);
-
-            var svg = d3.select("body")
-                .append("svg")
-                .attr("width", w)
-                .attr("height", h);
-
-            svg.selectAll("circle")
-                .data(dataset)
-               .enter()
-                .append("circle")
-                .attr("cx", function (d) {
-                    return xScale(parseDate(d[0]));
-                })
-                .attr("cy", function (d) {
-                    return yScale(d[1]);
-                })
-                .attr("r", 2);
+          
         })
     };
 </script>
