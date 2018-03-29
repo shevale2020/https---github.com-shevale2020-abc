@@ -1,191 +1,338 @@
 
 
-<!doctype html>
-<html>
+@model ECloseWebApp.Models.ViewModelForBusinessUnitDD
+@using ECloseBL.Entities;
+@{
+    ViewBag.Title = "TeamTaskDetailsReport";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    path {
+        fill: none;
+        stroke: black;
+    }
 
-<head>
-    <title>Line Chart</title>
-    <script src="~/Scripts/jquery-1.10.2.min.js"></script>
-    <link href="~/Content/bootstrap.min.css" rel="stylesheet" />
-    <script src="~/Scripts/bootstrap.js"></script>
-    <script src="~/Scripts/bootstrap.min.js"></script>
-    <script src="~/Scripts/Chart.min.js"></script>
-    <script src="~/Scripts/utils.js"></script>
-    
-    @*<script src="../../utils.js"></script>*@
-    <style>
-        canvas {
-            -moz-user-select: none;
-            -webkit-user-select: none;
-            -ms-user-select: none;
-        }
+    body {
+        background: #fff;
+    }
+</style>
+<script src="~/Scripts/jquery-1.10.2.min.js"></script>
+<script src="~/Scripts/d3.v3.min.js"></script>
 
-        .chart-container {
-            width: 500px;
-            margin-left: 40px;
-            margin-right: 40px;
-            margin-bottom: 40px;
-        }
+<script type="text/javascript">
+    $('#inputEntity').hide();
+    $('#LoadRecords').hide();
+    $('#divFilter').hide();
 
-        .container {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-    </style>
-</head>
+    $(function () {
+        $('#datetimepicker').datetimepicker({
+            viewMode: 'months',
+            format: 'MMM-YYYY',
+        });
+    });
 
-<body>
-    <div class="container">
-        <div class="col-lg-12">
-            <br />
-            <br />
-            <br />
-            <div class="row">
-                <form action="/Report/GetReportData">
+    $(document).ready(function () {
+        $("#datepickermonth").val(function () {
+            var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];;
+            var date = new Date();
+            return months[date.getMonth() - 1] + '-' + date.getFullYear();
+        });
 
-                    <div class="col-lg-3">
-                        <label>Location</label>
-                        <select title="Location" id="LocationId" name="LocationId">
-                            <option value="0">All</option>
-                            <option value="186">WNS NA - US</option>
-                            <option value="2">WNS NA - Canada</option>
-                            <option value="1">WNS IND - Mumbai</option>
-                            <option value="59">WNS-IND-Pune</option>
-                            <option value="14">WNS-IND-Canada</option>
-                        </select>
-                    </div>
-                    <div class="col-lg-3">
-                        <label>Period</label>
-                        <select title="Period" id="PeriodId" name="PeriodId">
-                            <option value="0">All</option>
-                            <option value="83">Jan-2017</option>
-                            <option value="1">Feb-2017</option>
-                            <option value="2">March-2017</option>
-                            <option value="39">April-2017</option>
-                            <option value="16">May-2017</option>
-                        </select>
-                    </div>
-                    <div class="col-lg-3">
-                        <label>Team</label>
-                        <select title="Period" id="PeriodId" name="PeriodId">
-                            <option value="0">All</option>
-                            <option value="83">ABC</option>
-                            <option value="1">XYZ</option>
+        $("#moduleName").text('Reports');
+        $('#LoadRecords').click(function () {
+            location.reload();
+        });
 
-                        </select>
-                    </div>
-                    <button type="button" onclick="updateDate()">Show </button>
+        var report = '@ViewBag.Report';
+
+        jQuery("#repName").text("Generate " + report + " Report");
+
+        $('#btnReport').click(function () {
+            debugger;
+            var LocationId = $('#Location').val();
+            var Location = $("#Location :selected").text();
+            var TeamId = $('#Team').val();
+            var Team = $("#Team :selected").text();
+            var period = $('#datepickermonth').val();
+
+            if (LocationId == null || LocationId == '') {
+                // alert('Please select period !!');
+                Command: toastr["info"]("Please select location !!");
+                return false;
+            }
+
+            if (period == null || period == '') {
+                // alert('Please select period !!');
+                Command: toastr["info"]("Please select period !!");
+                return false;
+            }
+            //document.getElementById("myReport").src = '@System.Configuration.ConfigurationManager.AppSettings["WebbAppUrl"]' + "/Reports/ReportViewer.aspx?Period=" + period + "&LocationId=" + LocationId + "&TeamId=" + TeamId + "&Report=" + report + "&Location=" + Location + "&Team=" + Team;
+
+            $('#autoUpdate').modal('show');
+        });
+
+        $('#Location').change(function () {
+            debugger;
+            var LocationId = $(this).val();
+
+            $.post('@Url.Action("GetTeamsForLocation", "Team")', { LocationId: LocationId },
+                   function (results) {
+                       $("#Team").empty();
+                       $.each(results.Options, function (index, value) {
+                           $("#Team").append("<option value='" + value.Value + "'>" + value.DisplayText + "</option>");
+                       });
+                   });
+        })
+    });
+</script>
 
 
-                </form>
+<div class="panel panel-white">
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group  ">
+                    <label title="">
+                        Location :
+                    </label>
+                    @Html.DropDownListFor(m => m.Location, Model.Location, new { @class = "form-control" })
+                </div>
             </div>
-            <br />
-            <br />
-            <br />
-            <div class="row">
-                <div class="container">
+            <div class="col-md-4">
+                <div class="form-group  no-m">
+                    <label title="">
+                        Period:
+                    </label>
+                    <div class='input-group date' id='datetimepicker'>
+                        <input type="text" class="form-control" name="datepicker" id="datepickermonth" onkeydown="return false;" onpaste="return false;" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar">
+                            </span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-   
-    <script>
-        function createConfig(pointStyle) {
-            return {
-                type: 'line',
-                data: {
-                    labels: ['1/1/2017', '2/1/2017', '3/1/2017', '4/1/2017', '5/1/2017', '6/1/2017', '7/1/2017'],
-                    datasets: [{
-                        label: 'Task Name',
-                        backgroundColor: window.chartColors.red,
-                        borderColor: window.chartColors.red,
-                        data: [1, 1, 1, 1, 1, 1, 1],
-                        fill: false,
-                        pointRadius: 5,
-                        pointHoverRadius: 5,
-                        showLine: false // no line shown
-                    },
-					{
-					    label: 'Task Name',
-					    backgroundColor: window.chartColors.green,
-					    borderColor: window.chartColors.green,
-					    data: [2, , 2, 2, , 2, 2],
-					    fill: false,
-					    pointRadius: 5,
-					    pointHoverRadius: 15,
-					    showLine: false // no line shown
-					},
-					{
-					    label: 'Task Name',
-					    backgroundColor: window.chartColors.yellow,
-					    borderColor: window.chartColors.yellow,
-					    data: [3, , , 3, , , 3],
-					    fill: false,
-					    pointRadius: 5,
-					    pointHoverRadius: 15,
-					    showLine: false // no line shown
-					},
-					{
-					    label: 'Task Name',
-					    backgroundColor: window.chartColors.blue,
-					    borderColor: window.chartColors.blue,
-					    data: [, , , , , , 4],
-					    fill: false,
-					    pointRadius: 5,
-					    pointHoverRadius: 15,
-					    showLine: false // no line shown
-					}
-                    ],
+    <div class="panel-footer">
+        <button id="btnReport" class="btn btn-primary" onclick="updateDate()">Generate Graph</button>
+    </div>
+    <div class="row">
+        <div id="wrapper" align="center">
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+
+    function updateDate() {
+        var colorData = [];
+        var url = "/Report/filterdata";
+        var urlParam = "";
 
 
-                },
-                options: {
-                    responsive: true,
-                    title: {
-                        display: true,
-                        text: 'Team: ' + 'Task'
-                    },
-                    legend: {
-                        display: false
-                    },
-                    elements: {
-                        point: {
-                            pointStyle: pointStyle
-                        }
-                    }
-                }
-            };
+        //here add a filter
+        if (document.getElementById('Location').value != "0" && document.getElementById('datepickermonth').value != "0") {
+            var Period = document.getElementById('datepickermonth').value;
+            console.log(Period);
+            url += "?LocationId=" + document.getElementById('Location').value;
+            url += "&PeriodText=" + Period;
         }
 
-        window.onload = function () {
-            var container = document.querySelector('.container');
-            [
-				'circle',
-				//'triangle',
-				//'rect',
-				//'rectRounded',
-				//'rectRot',
-				//'cross',
-				//'crossRot',
-				//'star',
-				//'line',
-				//'dash'
-            ].forEach(function (pointStyle) {
-                var div = document.createElement('div');
-                div.classList.add('chart-container');
+        console.log(url);
+        d3.json(url, function (data) {
 
-                var canvas = document.createElement('canvas');
-                div.appendChild(canvas);
-                container.appendChild(div);
+            //convert string data into json
+            data = JSON.parse(data)
+            console.log(data);
+            var format = d3.time.format("%d/%m/%Y");
 
-                var ctx = canvas.getContext('2d');
-                var config = createConfig(pointStyle);
-                new Chart(ctx, config);
-            });
-        };
-    </script>
-</body>
+            // x axis scal min and maximum data ...if yoy to do this dynamaic send the data for json assign here
+            var dateMin = format.parse("20/03/2017");
+            var dateMax = format.parse("01/07/2017");
 
-</html>
+            var margin = {
+                top: 20,
+                right: 20,
+                bottom: 30,
+                left: 120
+            },
+                width = 860 - margin.left - margin.right,
+                height = 450 - margin.top - margin.bottom;
+
+            // add for teamwise color legend  TODO : need to working
+            var svg = d3.select("#wrapper").append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("rect")
+                .attr("width", "100%")
+                .attr("height", "100%")
+                .attr("fill", "#F7F7F7");
+
+
+            ///
+            var xValue = function (d) {
+                return format.parse(d.TaskDate);
+            }, // data -> value
+                xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width]), // value -> display
+                xMap = function (d) {
+                    console.log(xScale.domain()[1].toISOString());
+                    return xScale(xValue(d));
+                }, // data -> display
+                xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+            var yValue = function (d) {
+                return d.TaskNumber;
+            }, // data -> value
+                yScale = d3.scale.linear().range([height, 0]), // value -> display
+                yMap = function (d) {
+                    return yScale(yValue(d));
+                }, // data -> display
+                yAxis = d3.svg.axis().scale(yScale).orient("left");
+            // setup fill color
+            var cValue = function (d) {
+                return d.ownership;
+            },
+                color = d3.scale.category10();
+
+            // add the tooltip area to the webpage
+            var tooltip = d3.select("#wrapper").append("div")
+                .attr("class", "tooltip")
+                .style("opacity", 0);
+
+            // don't want dots overlapping axis, so add in buffer to data domain
+            xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
+            yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 10]);
+
+            //x-axis name
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width)
+                .attr("y", -6)
+                .style("text-anchor", "end")
+                .text("Task End Date");
+
+            // y-axis name
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("");
+
+            // draw dots
+            svg.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("r", 3.5)
+                .attr("cx", xMap)
+                .attr("cy", yMap)
+                .style("fill", function (d) {
+                    return color(d.extra);
+                }).append("title")
+                .text(function (d) { return (d.TaskTitle + "(" + xValue(d) + ", " + yValue(d) + ")") })
+
+                .on("mouseout", function (d) {
+                    tooltip.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                })
+                .attr('data-title', function (e) {
+                    return e.TaskTitle;
+                })
+                  .attr('data-team', function (e) {
+                      return e.TeamName;
+                  })
+                .attr('data-value', function (e) {
+                    return e.TaskNumber;
+                })
+                .attr('data-date', function (e) {
+                    return e.TaskDate;
+                })
+                .attr('data-sqft', function (e) {
+                    return e.extra;
+                });
+            // draw legend
+            var legend = svg.selectAll(".legend")
+                .data(color.domain())
+              .enter().append("g")
+                .attr("class", "legend")
+
+                .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+
+            //var legend = svg.selectAll('.legend')
+            //   .data(colorData)
+            //   .enter().append('g')
+            //   .attr('class', 'legend')
+            //   .attr('ID', function (d) { return d.name })
+            //   .attr("transform", function (d, i) {
+            //       return "translate(" + 60 + "," + (i + 3) * 30 + ")";
+            //   });
+
+            // draw legend colored rectangles
+            legend.append("rect")
+                .attr("x", width - 18)
+                .attr("width", 18)
+                .attr("height", 18)
+                .style("fill", color);
+
+            // draw legend text
+            legend.append("text")
+                .attr("x", width - 24)
+                .attr("y", 9)
+                .attr("dy", ".35em")
+                .style("text-anchor", "end")
+                 .text(function (d) { return (d); })
+
+            var line = d3.svg.line()
+            .x(function (d) { return x(d.x); })
+            .y(function (d) { return y(d.y); });
+            var w = 500;
+            var h = 300;
+            var padding = 20;
+
+            var parseDate = d3.time.format("%m-%Y").parse;
+            var mindate = parseDate("01-2000"),
+                maxdate = parseDate("01-2015");
+
+            var xScale = d3.time.scale()
+                .domain([mindate, maxdate])
+                .range([padding, w - padding * 2]);
+
+            var yScale = d3.scale.linear()
+                .domain([0, d3.max(dataset, function (d) {
+                    return d[1];
+                })])
+                .range([0, h]);
+
+            var svg = d3.select("body")
+                .append("svg")
+                .attr("width", w)
+                .attr("height", h);
+
+            svg.selectAll("circle")
+                .data(dataset)
+               .enter()
+                .append("circle")
+                .attr("cx", function (d) {
+                    return xScale(parseDate(d[0]));
+                })
+                .attr("cy", function (d) {
+                    return yScale(d[1]);
+                })
+                .attr("r", 2);
+        })
+    };
+</script>
+
+
