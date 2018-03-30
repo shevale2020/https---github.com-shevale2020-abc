@@ -1,0 +1,19 @@
+// Assuming first that you had **_valid json_**
+myList= [
+    { "id":"38","product":"foo"},
+    { "id":"38","product":"foo"},
+    { "id":"38","product":"foo"},
+    { "id":"39","product":"bar"},
+    { "id":"40","product":"hello"},
+    { "id":"40","product":"hello"}
+];
+
+// What you're essentially attempting to do is turn this **list of objects** into a **dictionary**.
+var newDict = {}
+
+for(var i=0; i<myList.length; i++) {
+    newDict[myList[i]['id']] = myList[i]['product'];
+}
+
+// `newDict` is now:
+console.log(newDict);
