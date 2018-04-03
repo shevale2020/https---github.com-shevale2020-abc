@@ -1,0 +1,85 @@
+    try
+            {
+                var path = Constants.ApiPath + "api/Report/GetTaskTimelineChartReport?LocationId=" + LocationId + "&PeriodText=" + PeriodText;
+                using (var httpClient = new HttpClient())
+                {
+                    HttpResponseMessage response = httpClient.GetAsync(path).Result;
+                    var responseData = response.Content.ReadAsStringAsync().Result;
+                    var task = JsonConvert.DeserializeObject(responseData);
+                    List<TaskInfo> taskDetails = new List<TaskInfo>();
+                    taskDetails = JsonConvert.DeserializeObject<List<TaskInfo>>(responseData);
+                    if (taskDetails != null)
+                    {
+                        List<TaskInfo> _info = new List<TaskInfo>();
+                        _info = taskDetails;
+
+                        // logic for add value of task date wise task number assign ..same date it will 1,2,3,4 etc
+                        //string teamOldValue = "";
+                        var teamCollection = (_info.GroupBy(x => x.TeamName)
+                                                           .Select(TeamName => new
+                                                           {
+                                                               TeamName = TeamName.Key
+                                                           }));
+                        int count = 0;
+                        var color = (teamCollection.Select(TeamName => new
+                        {
+                            value = count++,
+                            name = TeamName.TeamName
+                        }).ToList());
+
+                        int teamCounter = 0;
+                        foreach (var teamGroup in teamCollection)
+                        {
+
+                            string teamname = teamGroup.TeamName;
+
+                            int teamDateMaxCount = _info.Where(x => x.TeamName == teamname).GroupBy(x => x.EndDate)
+                                                         .Max(g => g.Count());
+                            int counter = 1;
+                            string oldValue = "";
+                            foreach (var item in _info.Where(x => x.TeamName == teamname).OrderBy(x => x.EndDate))
+                            {
+                                if (oldValue != item.EndDate.ToString())
+                                {
+                                    counter = 1;
+                                }
+                                else
+                                {
+                                    counter++;
+                                }
+                                oldValue = item.EndDate.ToString("dd/MM/yyyy");
+                                item.value = teamCounter + counter;
+                                item.extra = color.Where(x => x.name == teamname).First().value.ToString();
+                            }
+                            teamCounter += teamDateMaxCount;
+                        }
+                        //here customise column name
+                        var output = from i in _info
+                                     select new
+                                     {
+                                         TaskTitle = i.TaskName,
+                                         TaskNumber = i.value,
+                                         TaskDate = i.EndDate.ToString("dd/MM/yyyy"),
+                                         TaskName = i.TaskName,
+                                         extra = i.extra,
+                                         DependantTaskId = i.DependantTaskId,
+                                         DependantTaskDate = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate.ToString("dd/MM/yyyy"),
+                                         DependantTaskNumber = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().value,
+                                         color = i.EndDate >= _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate ? "green" : "red"
+
+                                     };
+
+                        return Json(JsonConvert.SerializeObject(output), JsonRequestBehavior.AllowGet);
+                        // return Json(_json, JsonRequestBehavior.AllowGet);
+
+                    }
+                    else
+                    {
+                        return Json(new { Result = "OK", Message = "Record Not Found.", Record = task });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { Result = "ERROR", Message = ex.Message });
+            }
