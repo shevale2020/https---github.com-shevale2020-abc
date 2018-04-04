@@ -1,4 +1,4 @@
-    public List<dynamic> GetTaskTimelineChartReport(int LocationId, string PeriodText)
+    public List<dynamic> GetTaskTimelineChartReport(int LocationId, string PeriodText, int tenantId)
         {
             List<dynamic> result = (from WorkbasketTask in context.WorkbasketTasks
                                     join Period in context.Periods
@@ -16,8 +16,7 @@
                                     join Task in context.Tasks
                                     on WorkbasketTask.TaskId equals Task.Id into taskinfo
                                     from Task in taskinfo.DefaultIfEmpty()
-                                    where (WorkbasketTask.TaskId != null) && ( WorkbasketTask.TenantId == 57) && (WorkbasketTaskUsers.EndDateInt != null) && (Period.PeriodText == PeriodText) 
-                                    //&& (Period.LocationId == LocationId) 
+                                    where (WorkbasketTask.TaskId != null)  && (WorkbasketTaskUsers.EndDateInt != null) && (Period.PeriodText == PeriodText) && (Period.LocationId == LocationId) && (WorkbasketTask.TenantId == tenantId)
                                     group WorkbasketTask by new
                                     {
                                         WorkbasketTask.TeamId,
@@ -29,19 +28,14 @@
                                     } into gcs
                                     select new
                                     {
-                                        TeamId = gcs.Key.TeamId,
-                                        TeamName = gcs.Key.TeamName,
-                                        TaskName = gcs.Key.TaskName,
-                                        TaskId = gcs.Key.TaskId,
-                                        //DependantTaskId = gcs.Key.DependentTaskId,
+                                        TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                        TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                        TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                        TaskId = (gcs.Key.TaskId == null) ? 0 : gcs.Key.TaskId,
                                         DependantTaskId = (gcs.Key.DependentTaskId == null) ? gcs.Key.TaskId : gcs.Key.DependentTaskId,
-                                        EndDate = gcs.Max(x => gcs.Key.EndDateInt),
+                                        EndDate = gcs.Max(x => (gcs.Key.EndDateInt == null) ? "01/01/2000" : gcs.Key.EndDateInt.ToString()),
                                         value = "",
                                         extra = ""
-                                        //Day = (gcs.Max(x => gcs.Key.EndDateInt)).Value.Day
-                                        //EndDate = gcs.Key.EndDateInt
                                     }).ToList<dynamic>();
-            //List<dynamic> strlist = new List<dynamic>();
-            //strlist.Add ("abc");
             return (result);
         }
