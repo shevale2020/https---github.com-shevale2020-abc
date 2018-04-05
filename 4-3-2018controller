@@ -1,90 +1,196 @@
- public JsonResult filterdata(int LocationId, string PeriodText)
+using ECloseWebApp.BuisnessEntities;
+using ECloseWebApp.HelperClasses;
+using ECloseWebApp.Models;
+using Newtonsoft.Json;
+using System;
+using System.Net.Http;
+using System.Web.Mvc;
+using System.Threading.Tasks;
+using eCloseDataAccessLayer.HelperClasses;
+using eCloseDataAccessLayer.Models;
+using Newtonsoft.Json.Linq;
+using System.Linq;
+using System.Collections.Generic;
+
+namespace ECloseWebApp.Controllers
+{
+    [HandleExceptionsAttribute]
+
+    class TaskInfo
+    {
+        public string TaskName { get; set; }
+        //value is used for calculate task number
+        public int? value { get; set; }
+        //if any extra param to send
+        public string extra { get; set; }
+        public string TeamName { get; set; }
+        public int? TeamId { get; set; }
+        public int? TaskId { get; set; }
+        public int? DependantTaskId { get; set; }
+        public DateTime EndDate { get; set; }
+
+    }
+    public class ReportController : Controller
+    {
+        ReportClass cls = new ReportClass();
+        log4net.ILog logger = log4net.LogManager.GetLogger(typeof(LoginController));  //Declaring Log4Net 
+        // GET: Report
+        public ActionResult Index()
         {
-            
+
+            //if (Request.QueryString["report"].ToString() != null)
+            //{
+            //    ViewBag.Report = Request.QueryString["report"].ToString();
+            //}
+            int locationId = 0;
+            int tenantId = SessionWrapper.TenantId;
+            LocationClass locClass = new LocationClass();
+            var locations = locClass.List(tenantId);
+            var vm = new ViewModelForBusinessUnitDD();
+
+            foreach (var location in locations)
+            {
+                vm.Location.Add(new SelectListItem { Text = location.LocationName + ' ' + '[' + location.TimeZone + ']', Value = location.Id.ToString() });
+            }
+
+            if (vm.Location.Count > 0 && vm.Location[0].Value != null)
+            {
+                locationId = Convert.ToInt32(vm.Location[0].Value);
+            }
+
+            TeamClass teamClass = new TeamClass();
+            var responseTeam = teamClass.LocationTeams(locationId);
+            foreach (var team in responseTeam)
+            {
+                vm.Team.Add(new SelectListItem { Text = team.TeamName, Value = team.Id.ToString() });
+            }
+
+            vm.Team.Insert(0, new SelectListItem { Text = "--All--", Value = "0" });
+
+            PeriodClass periodClass = new PeriodClass();
+            var Period = periodClass.GetOpenPeriods(locationId);
+            if (Period.Count > 0)
+            {
+                foreach (var p in Period)
+                {
+                    vm.Period.Add(new SelectListItem { Text = p.PeriodText, Value = p.Id.ToString() });
+                }
+            }
+            vm.Period.Insert(0, new SelectListItem { Text = "--Select--", Value = "0" });
+            return View(vm);
+        }
+        public ActionResult TeamTaskDetailsReport()
+        {
+            int locationId = 0;
+            int tenantId = SessionWrapper.TenantId;
+            LocationClass locClass = new LocationClass();
+            var locations = locClass.List(tenantId);
+            var vm = new ViewModelForBusinessUnitDD();
+
+            foreach (var location in locations)
+            {
+                vm.Location.Add(new SelectListItem { Text = location.LocationName + ' ' + '[' + location.TimeZone + ']', Value = location.Id.ToString() });
+            }
+
+            if (vm.Location.Count > 0 && vm.Location[0].Value != null)
+            {
+                locationId = Convert.ToInt32(vm.Location[0].Value);
+            }
+
+            return View(vm);
+
+        }
+        public JsonResult filterdata(int LocationId, string PeriodText)
+        {
+
             //Create sample data
             try
             {
+                string result = "ERROR";
+                string message = Constants.ErrorSessionExpired;
                 int tenantId = SessionWrapper.TenantId;
-                var path = Constants.ApiPath + "api/Report/GetTaskTimelineChartReport?LocationId=" + LocationId + "&PeriodText=" + PeriodText+ "&TenantId="+ tenantId;
-                using (var httpClient = new HttpClient())
+
+                ReportClass _report = new ReportClass();
+                var responseData = _report.GetTaskTimelineChartReport(LocationId, PeriodText, tenantId);
+                //var task = JsonConvert.DeserializeObject(responseData);
+                List<TaskInfo> taskDetails = new List<TaskInfo>();
+                taskDetails = JsonConvert.DeserializeObject<List<TaskInfo>>(responseData);
+                if (taskDetails != null)
                 {
-                    HttpResponseMessage response = httpClient.GetAsync(path).Result;
-                    var responseData = response.Content.ReadAsStringAsync().Result;
-                    var task = JsonConvert.DeserializeObject(responseData);
-                    List<TaskInfo> taskDetails = new List<TaskInfo>();
-                    taskDetails = JsonConvert.DeserializeObject<List<TaskInfo>>(responseData);
-                    if (taskDetails != null)
+                    List<TaskInfo> _info = new List<TaskInfo>();
+                    _info = taskDetails;
+
+                    // logic for add value of task date wise task number assign ..same date it will 1,2,3,4 etc
+                    //string teamOldValue = "";
+                    var teamCollection = (_info.GroupBy(x => x.TeamName)
+                                                       .Select(TeamName => new
+                                                       {
+                                                           TeamName = TeamName.Key
+                                                       }));
+                    int count = 0;
+                    var color = (teamCollection.Select(TeamName => new
                     {
-                        List<TaskInfo> _info = new List<TaskInfo>();
-                        _info = taskDetails;
+                        value = count++,
+                        name = TeamName.TeamName
+                    }).ToList());
 
-                        // logic for add value of task date wise task number assign ..same date it will 1,2,3,4 etc
-                        //string teamOldValue = "";
-                        var teamCollection = (_info.GroupBy(x => x.TeamName)
-                                                           .Select(TeamName => new
-                                                           {
-                                                               TeamName = TeamName.Key
-                                                           }));
-                        int count = 0;
-                        var color = (teamCollection.Select(TeamName => new
+                    int teamCounter = 0;
+                    foreach (var teamGroup in teamCollection)
+                    {
+
+                        string teamname = teamGroup.TeamName;
+
+                        int teamDateMaxCount = _info.Where(x => x.TeamName == teamname).GroupBy(x => x.EndDate)
+                                             .Max(g => g.Count());
+                        int counter = 1;
+                        string oldValue = "";
+                        foreach (var item in _info.Where(x => x.TeamName == teamname).OrderBy(x => x.EndDate))
                         {
-                            value = count++,
-                            name = TeamName.TeamName
-                        }).ToList());
-
-                        int teamCounter = 0;
-                        foreach (var teamGroup in teamCollection)
-                        {
-
-                            string teamname = teamGroup.TeamName;
-
-                            int teamDateMaxCount = _info.Where(x => x.TeamName == teamname).GroupBy(x => x.EndDate)
-                                                 .Max(g => g.Count());
-                            int counter = 1;
-                            string oldValue = "";
-                            foreach (var item in _info.Where(x => x.TeamName == teamname).OrderBy(x => x.EndDate))
+                            if (oldValue != item.EndDate.ToString("dd/MM/yyyy"))
                             {
-                                if (oldValue != item.EndDate.ToString("dd/MM/yyyy"))
-                                {
-                                    counter = 1;
-                                }
-                                else
-                                {
-                                    counter++;
-                                }
-                                oldValue = item.EndDate.ToString("dd/MM/yyyy");
-                                item.value = teamCounter + counter;
-                                item.extra = color.Where(x => x.name == teamname).First().value.ToString();
+                                counter = 1;
                             }
-                            teamCounter += teamDateMaxCount;
+                            else
+                            {
+                                counter++;
+                            }
+                            oldValue = item.EndDate.ToString("dd/MM/yyyy");
+                            item.value = teamCounter + counter;
+                            item.extra = color.Where(x => x.name == teamname).First().value.ToString();
                         }
-                        //here customise column name
-                        var output = from i in _info
-                                     select new
-                                     {
-                                         TaskTitle = i.TaskName,
-                                         TaskNumber = i.value,
-                                         TaskDate = i.EndDate.ToString("dd/MM/yyyy"),
-                                         TaskName = i.TaskName,
-                                         TaskId = i.TaskId,
-                                         extra = i.extra,
-                                         DependantTaskId = i.DependantTaskId,
-                                         DependantTaskDate = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate.ToString("dd/MM/yyyy"),
-                                         DependantTaskNumber = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().value,
-                                         color = i.EndDate >= _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate ? "rgb(44, 160, 44)" : "rgb(214, 39, 40)", //green/red color
-                                         TeamName = i.TeamName
-                                     };
+                        teamCounter += teamDateMaxCount;
+                    }
+                    //here customise column name
+                    var output = from i in _info
+                                 select new
+                                 {
+                                     TaskTitle = i.TaskName,
+                                     TaskNumber = i.value,
+                                     TaskDate = i.EndDate.ToString("dd/MM/yyyy"),
+                                     TaskName = i.TaskName,
+                                     TaskId = i.TaskId,
+                                     extra = i.extra,
+                                     DependantTaskId = i.DependantTaskId,
+                                     DependantTaskDate = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate.ToString("dd/MM/yyyy"),
+                                     DependantTaskNumber = _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().value,
+                                     color = i.EndDate >= _info.Where(x => x.TaskId == i.DependantTaskId).FirstOrDefault().EndDate ? "rgb(44, 160, 44)" : "rgb(214, 39, 40)", //green/red color
+                                     TeamName = i.TeamName
+                                 };
 
-                        return Json(JsonConvert.SerializeObject(output), JsonRequestBehavior.AllowGet);
-                    }
-                    else
-                    {
-                        return Json(new { Result = "OK", Message = "Record Not Found.", Record = task });
-                    }
+                    return Json(JsonConvert.SerializeObject(output), JsonRequestBehavior.AllowGet);
                 }
+                else
+                {
+                    return Json(new { Result = "OK", Message = "Record Not Found.", Record = task });
+                }
+
             }
             catch (Exception ex)
             {
                 return Json(new { Result = "ERROR", Message = ex.Message });
             }
+            //return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+
         }
+    }
+}
