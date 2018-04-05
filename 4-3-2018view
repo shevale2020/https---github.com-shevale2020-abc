@@ -131,7 +131,7 @@
         //here add a filter
         if (document.getElementById('Location').value != "0" && document.getElementById('datepickermonth').value != "0") {
             var Period = document.getElementById('datepickermonth').value;
-            console.log(Period);
+            //console.log(Period);
             url += "?LocationId=" + document.getElementById('Location').value;
             url += "&PeriodText=" + Period;
             var chart = d3.select("#wrapper");
@@ -147,17 +147,32 @@
 
             //lagend TeamNames
             var TeamNames = [];
-
+            var TaskEndDates = [];
             $.each(data, function (index, value) {
                 if ($.inArray(value.TeamName, TeamNames) == -1) {
                     TeamNames.push(value.TeamName);
                 }
+                if ($.inArray(value.TaskDate, TaskEndDates) == -1) {
+                    TaskEndDates.push(value.TaskDate);
+                }
             });
+
+            //function sortDates(a, b) {
+            //    return a.getDate() - b.geteDate();
+            //}
+          
+            var sorted = TaskEndDates.sort();
+            var minDate = sorted[0];
+            var maxDate = sorted[sorted.length - 1];
+
+            console.log(minDate);
+            console.log(maxDate);
 
             var format = d3.time.format("%d/%m/%Y");
             // x axis scal min and maximum data ...if yoy to do this dynamaic send the data for json assign here
-            var dateMin = format.parse("20/03/2017");
-            var dateMax = format.parse("01/07/2017");
+           
+            var dateMin = new Date(format.parse(minDate));
+            var dateMax = new Date(format.parse(maxDate));
 
             var margin = {
                 top: 20,
@@ -169,14 +184,23 @@
                 height = 500 - margin.top - margin.bottom;
 
             //add for teamwise color legend  TODO : need to working
-
+     
+            dateMin.setDate(dateMin.getDate() - 1);
+            var newMinDate = dateMin.toDateString();
+            newMinDate = new Date(Date.parse(newMinDate));
+   
+            dateMax.setDate(dateMax.getDate() + 1);
+            var newMaxDate = dateMax.toDateString();
+            newMaxDate = new Date(Date.parse(newMaxDate));
+       
             ///
             var xValue = function (d) {
                 return format.parse(d.TaskDate);
             }, // data -> value
-                xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width]), // value -> display
+
+                xScale = d3.time.scale().domain([newMinDate, newMaxDate]).range([0, width], 3.5), // value -> display
                 xMap = function (d) {
-                    console.log(xScale.domain()[1].toISOString());
+                   // console.log(xScale.domain()[1].toISOString());
                     return xScale(xValue(d));
                 }, // data -> display
                 xAxis = d3.svg.axis().scale(xScale).orient("bottom");
@@ -200,7 +224,8 @@
                 .attr("height", height + margin.top + margin.bottom)
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-            svg.append("rect")
+
+             svg.append("rect")
                 .attr("width", "100%")
                 .attr("height", "100%")
                 .attr("fill", "#F7F7F7");
@@ -211,8 +236,8 @@
                 .style("opacity", 0);
 
             // don't want dots overlapping axis, so add in buffer to data domain
-
-            xScale.domain([d3.min(data, xValue), d3.max(data, xValue)]);
+  
+            xScale.domain([newMinDate, newMaxDate]);
             yScale.domain([d3.min(data, yValue) - 1, d3.max(data, yValue) + 10]);
 
             //x-axis name
@@ -272,7 +297,7 @@
 
             //draw line
             for (var item in data) {
-                console.log(data[item]["TaskNumber"]);
+                //console.log(data[item]["TaskNumber"]);
 
                 svg.append("line")
                     .attr("x1", xScale(format.parse(data[item]["TaskDate"])))
@@ -310,3 +335,4 @@
     };
 
 </script>
+
