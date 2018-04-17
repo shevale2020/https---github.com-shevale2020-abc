@@ -5,7 +5,6 @@ inner join WorkBasketTask t2 on t1.WorkbasketTaskId=t2.Id
 inner join Period t3 on t2.PeriodId=t3.Id
 inner join PeriodDays t4 on t3.Id=t4.PeriodId
 inner join Team t5 on t2.TeamId=t5.Id
---inner join WorkbasketTaskUsers t6 on t2.Id=t6.WorkbasketTaskId
 inner join WorkbasketTaskUsers t7 on t7.Id=t1.DependsOnWorkbasketTaskId
 where t3.LocationId=203 and t3.Id=110
 group by t7.EndDateInt,t1.WorkbasketTaskId,t7.WFLevel,t1.DependsOnWorkbasketTaskId,t2.TaskName,t5.TeamName,t3.Id
