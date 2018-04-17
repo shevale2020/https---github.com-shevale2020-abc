@@ -1,4 +1,4 @@
-Select max( t7.WFLevel) as WFLevel,t7.EndDateInt ,t1.WorkbasketTaskId
+Select t7.EndDateInt ,t1.WorkbasketTaskId
 ,t1.DependsOnWorkbasketTaskId,t2.TaskName,t5.TeamName,t3.Id as periodid
 from DependetWorkbasketTasks  t1
 inner join WorkBasketTask t2 on t1.WorkbasketTaskId=t2.Id
