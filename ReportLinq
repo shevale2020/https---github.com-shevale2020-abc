@@ -68,3 +68,12 @@
                                value = "",
                                extra = ""
                            }).ToList<dynamic>();
+                           
+                           
+                           
+                           
+                           
+                           
+                           Exception thrown: 'System.NotSupportedException' in EntityFramework.SqlServer.dll
+
+Additional information: Unable to create a constant value of type 'System.Object'. Only primitive types or enumeration types are supported in this context.
