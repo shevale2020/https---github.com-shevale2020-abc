@@ -1,23 +1,105 @@
- 
-  public class TaskInfo
-    {
-        public string TaskName { get; set; }
-        //value is used for calculate task number
-        public int? value { get; set; }
-        //if any extra param to send
-        public string extra { get; set; }
-        public string TeamName { get; set; }
-        // public int? TeamId { get; set; }
-        public int? WorkbasketTaskId { get; set; }
-        public int? DependsOnWorkbasketTaskId { get; set; }
-        public DateTime? EndDateInt { get; set; }
+using ECloseWebApp.BuisnessEntities;
+using ECloseWebApp.HelperClasses;
+using ECloseWebApp.Models;
+using System;
+using System.Web.Mvc;
+using eCloseDataAccessLayer.HelperClasses;
+using eCloseDataAccessLayer.Models;
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using System.Linq;
 
-    }
+namespace ECloseWebApp.Controllers
+{
+    [HandleExceptionsAttribute]
+
+    //public class TaskInfo
+    //{
+    //    public string TaskName { get; set; }
+    //    //value is used for calculate task number
+    //    public int? value { get; set; }
+    //    //if any extra param to send
+    //    public string extra { get; set; }
+    //    public string TeamName { get; set; }
+    //    // public int? TeamId { get; set; }
+    //    public int? WorkbasketTaskId { get; set; }
+    //    public int? DependsOnWorkbasketTaskId { get; set; }
+    //    public DateTime EndDateInt { get; set; }
+
+    //}
     public class ReportController : Controller
     {
- 
- [HttpGet]
-        public JsonResult Graphdata(int LocationId, string PeriodText)
+        ReportClass cls = new ReportClass();
+        log4net.ILog logger = log4net.LogManager.GetLogger(typeof(LoginController));  //Declaring Log4Net 
+        // GET: Report
+        public ActionResult Index()
+        {
+
+            if (Request.QueryString["report"].ToString() != null)
+            {
+                ViewBag.Report = Request.QueryString["report"].ToString();
+            }
+            int locationId = 0;
+            int tenantId = SessionWrapper.TenantId;
+            LocationClass locClass = new LocationClass();
+            var locations = locClass.List(tenantId);
+            var vm = new ViewModelForBusinessUnitDD();
+
+            foreach (var location in locations)
+            {
+                vm.Location.Add(new SelectListItem { Text = location.LocationName + ' ' + '[' + location.TimeZone + ']', Value = location.Id.ToString() });
+            }
+
+            if (vm.Location.Count > 0 && vm.Location[0].Value != null)
+            {
+                locationId = Convert.ToInt32(vm.Location[0].Value);
+            }
+
+            TeamClass teamClass = new TeamClass();
+            var responseTeam = teamClass.LocationTeams(locationId);
+            foreach (var team in responseTeam)
+            {
+                vm.Team.Add(new SelectListItem { Text = team.TeamName, Value = team.Id.ToString() });
+            }
+
+            vm.Team.Insert(0, new SelectListItem { Text = "--All--", Value = "0" });
+
+            PeriodClass periodClass = new PeriodClass();
+            var Period = periodClass.GetOpenPeriods(locationId);
+            if (Period.Count > 0)
+            {
+                foreach (var p in Period)
+                {
+                    vm.Period.Add(new SelectListItem { Text = p.PeriodText, Value = p.Id.ToString() });
+                }
+            }
+            vm.Period.Insert(0, new SelectListItem { Text = "--Select--", Value = "0" });
+            return View(vm);
+        }
+        public ActionResult TeamTaskDetailsReport()
+        {
+            int locationId = 0;
+            int tenantId = SessionWrapper.TenantId;
+            LocationClass locClass = new LocationClass();
+            var locations = locClass.List(tenantId);
+            var vm = new ViewModelForBusinessUnitDD();
+        
+            foreach (var location in locations)
+            {
+                vm.Location.Add(new SelectListItem { Text = location.LocationName + ' ' + '[' + location.TimeZone + ']', Value = location.Id.ToString() });
+            }
+
+            if (vm.Location.Count > 0 && vm.Location[0].Value != null)
+            {
+                locationId = Convert.ToInt32(vm.Location[0].Value);
+            }
+
+            return View(vm);
+
+        }
+
+        [HttpGet]
+        public JsonResult Graphdata(int LocationId, int PeriodId)
         {
             //Create sample data
             try
@@ -27,7 +109,7 @@
                 int tenantId = SessionWrapper.TenantId;
 
                 ReportClass _report = new ReportClass();
-                var responseData = _report.GetTaskTimelineChartReport(LocationId, PeriodText, tenantId);
+                var responseData = _report.GetTaskTimelineChartReport(LocationId, PeriodId, tenantId);
                 //var task = JsonConvert.DeserializeObject(responseData);
                 System.Web.Script.Serialization.JavaScriptSerializer jSearializer =
                    new System.Web.Script.Serialization.JavaScriptSerializer();
@@ -71,7 +153,6 @@
                             {
                                 counter++;
                             }
-                           // oldValue = item.EndDateInt.ToString("dd/MM/yyyy");
                             oldValue = item.EndDateInt.ToString();
                             item.value = teamCounter + counter;
                             item.extra = color.Where(x => x.name == teamname).First().value.ToString();
@@ -84,14 +165,14 @@
                                  {
                                      TaskTitle = i.TaskName,
                                      TaskNumber = i.value,
-                                     TaskDate = i.EndDateInt.ToString(),
+                                     TaskDate = i.EndDateInt,
                                      TaskId = i.WorkbasketTaskId,
                                      extra = i.extra,
                                      DependsOnWorkbasketTaskId = i.DependsOnWorkbasketTaskId,
                                      //DependantTaskDate = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt.ToString("dd/MM/yyyy"),
                                      //DependantTaskNumber = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().value,
                                      //color = i.EndDateInt >= _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt ? "rgb(44, 160, 44)" : "rgb(214, 39, 40)", //green/red color
-                                     DependantTaskDate = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).Count() > 0 ? _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt.ToString("dd/MM/yyyy") : i.EndDateInt.ToString("dd/MM/yyyy"),
+                                     DependantTaskDate = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).Count() > 0 ? _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt : i.EndDateInt,
                                      DependantTaskNumber = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).Count() > 0 ? _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().value : i.value,
                                      color = _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).Count() > 0 ? (i.EndDateInt >= _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt ? "rgb(44, 160, 44)" : "rgb(214, 39, 40)") : "rgb(214, 39, 40)", //green/red color
                                      TeamName = i.TeamName
@@ -112,4 +193,5 @@
             //return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
 
         }
-        }
+    }
+}
