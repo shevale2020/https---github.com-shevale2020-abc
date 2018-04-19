@@ -1,0 +1,39 @@
+  TaskInfo list1 = new TaskInfo();
+               list1.list= (from DependetWorkbasketTask in context.DependetWorkbasketTasks
+                          join WorkbasketTask in context.WorkbasketTasks
+                          on DependetWorkbasketTask.WorkbasketTaskId equals WorkbasketTask.Id
+                          join Period in context.Periods
+                          on WorkbasketTask.PeriodId equals Period.Id
+                          join PeriodDays in context.PeriodDays
+                          on Period.Id equals PeriodDays.PeriodId
+                          join Team in context.Teams
+                          on WorkbasketTask.TeamId equals Team.Id
+                          join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                          on DependetWorkbasketTask.DependsOnWorkbasketTaskId equals WorkbasketTaskUsers.Id
+                          where (Period.LocationId == 203) && (Period.Id == 110) && (WorkbasketTask.TenantId == 57)
+                          group DependetWorkbasketTask by new
+                          {
+                              WorkbasketTaskUsers.EndDateInt,
+                              DependetWorkbasketTask.WorkbasketTaskId,
+                              DependetWorkbasketTask.DependsOnWorkbasketTaskId,
+                              WorkbasketTask.TaskName,
+                              Team.TeamName
+                          } into gcs
+                          select new TaskInfo
+                          {
+                                  //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                  TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                  TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                  WorkbasketTaskId = (gcs.Key.WorkbasketTaskId == null) ? 0 : gcs.Key.WorkbasketTaskId,
+                                  DependsOnWorkbasketTaskId = gcs.Key.DependsOnWorkbasketTaskId,
+hya linela khalchi err ahefakt->  EndDateInt = gcs.Max(x=>(gcs.Key.EndDateInt==null) ? Convert.ToDateTime("01/01/2000") : Convert.ToDateTime(gcs.Key.EndDateInt.ToString())), 
+                                  value = 0,
+                                  extra = ""
+                          }).ToList<TaskInfo>();
+
+
+****************************************************************************************************
+
+Exception thrown: 'System.NotSupportedException' in EntityFramework.SqlServer.dll
+
+Additional information: LINQ to Entities does not recognize the method 'System.DateTime ToDateTime(System.String)' method, and this method cannot be translated into a store expression.
