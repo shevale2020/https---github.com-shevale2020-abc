@@ -165,7 +165,7 @@ namespace ECloseWebApp.Controllers
                                  {
                                      TaskTitle = i.TaskName,
                                      TaskNumber = i.value,
-                                     TaskDate = i.EndDateInt,
+                                     TaskDate = i.EndDateInt?.ToString("dd/MM/yyyy"),
                                      TaskId = i.WorkbasketTaskId,
                                      extra = i.extra,
                                      DependsOnWorkbasketTaskId = i.DependsOnWorkbasketTaskId,
