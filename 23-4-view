@@ -35,8 +35,8 @@
   
 @*<script src="~/Scripts/jquery-1.10.2.min.js"></script>*@
 <script src="~/Scripts/d3.v3.min.js"></script>
-<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.3.5/jspdf.min.js"></script>  
+@*<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>*@
+<script src="~/Scripts/jspdf.min.js"></script>
 @if (Model != null)
 {
   
@@ -88,8 +88,20 @@
                 </div>
             </div>
             <div class="panel-footer">
-                <button id="btnReport" class="btn btn-primary" onclick="updateDate()">Generate Dependency Graph</button>
+                <button id="btnReport" class="btn btn-primary" onclick="updateDate()">Generate Graph</button>
                 <input type="button" id="create_pdf" value="Generate PDF">
+            </div>
+            <div class="row">
+                <table id="table" class="hidden">
+                    <tr>
+                        <th>TaskId</th>
+                        <th>TaskName</th>
+                        <th>Duedate</th>
+                        <th>Dependent TaskId</th>
+                        <th>Dependent TaskName</th>
+                        <th>Dependent Duedate</th>
+                    </tr>
+                </table>
             </div>
             <div class="row">
                 <div id="wrapper" align="center">
@@ -102,9 +114,9 @@
 
             (function () {
                 var
-                 form = $('#wrapper'),
+                 form = $('#wrapper');
                  cache_width = form.width(),
-                 a4 = [595.28, 841.89]; // for a4 size paper width and height
+                 a2 = [1190.55, 1683.78]; // for a4 size paper width and height
 
                 $('#create_pdf').on('click', function () {
                     $('body').scrollTop(0);
@@ -117,7 +129,7 @@
                          img = canvas.toDataURL("image/png"),
                          doc = new jsPDF({
                              unit: 'px',
-                             format: 'a4'
+                             format: 'a2'
                          });
                         doc.addImage(img, 'JPEG', 20, 20);
                         doc.save('Graph-html-to-pdf.pdf');
@@ -127,7 +139,7 @@
 
                 // create canvas object
                 function getCanvas() {
-                    form.width((a4[0] * 1.33333) - 80).css('max-width', 'none');
+                    form.width((a2[0] * 1.33333) - 80).css('max-width', 'none');
                     return html2canvas(form, {
                         imageTimeout: 2000,
                         removeContainer: true
@@ -243,11 +255,25 @@
             else {
                IndependentTask=false;
             }
-           
-          
 
             d3.json('../Report/Graphdata?LocationId=' + locationId + '&PeriodId=' + Period + '&IndependentTask=' + IndependentTask, function (data) {
                 console.log(data);
+                if (data) {
+                    var len = data.length;
+                    var txt = "";
+                    if (len > 0) {
+                        for (var i = 0; i < len; i++) {
+                            //if (data[i].city && data[i].cStatus) {
+                            txt += "<tr><td>" + data[i].TaskId + "</td><td>" + data[i].TaskTitle
+                                + "</td><td>" + data[i].TaskDate + "</td><td>" + data[i].DependsOnWorkbasketTaskId
+                                + "</td><td>" + data[i].DependantTaskDate + "</td><td>" + data[i].TeamName+"</td></tr>";
+                            //}
+                        }
+                        if (txt != "") {
+                            $("#table").append(txt).removeClass("hidden");
+                        }
+                    }
+                }
                 if (data != null || data.empty == true) {
                     var Data = JSON.parse(data);
                     if (Data.length == 0) {
@@ -259,6 +285,22 @@
                         var TeamNames = [];
                         var TaskEndDates = [];
                         $.each(Data, function (index, value) {
+                            var len = value.length;
+                            var txt = "";
+                            if ($.inArray(value.TaskId)==-1){
+                            //if (data[i].city && data[i].cStatus) {
+                            txt += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
+                                + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
+                                + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.TeamName + "</td></tr>";
+                            //}
+                            }
+                               
+                            if (txt != "") {
+                                $("#table").append(txt).removeClass("hidden");
+                            }
+                        
+                        
+
                             if ($.inArray(value.TeamName, TeamNames) == -1) {
                                 TeamNames.push(value.TeamName);
                             }
@@ -283,19 +325,20 @@
                         //console.log(maxDate);
                        
                         // x axis scal min and maximum Data ...if you to do this dynamaic send the Data for json assign here
-                        //var dateMin = format.parse("20/03/2017");
-                        //var dateMax = format.parse("01/07/2017");
-                        var dateMin = new Date(minDate);
-                        var dateMax = new Date(maxDate);
-
+                        //var dateMin = format.parse("20/02/2018");
+                        //var dateMax = format.parse("11/04/2018");
+                        var dateMin = new Date();
+                        var dateMax = new Date();
+                        dateMax = format.parse(maxDate);
+                        dateMin = format.parse(minDate);
                         var margin = {
                             top: 20,
-                            right: 20,
-                            bottom: 30,
-                            left: 120
+                            right:20,
+                            bottom:30,
+                            left:10
                         },
-                            width = 1200 - margin.left - margin.right,
-                            height = 1000 - margin.top - margin.bottom;
+                            width = 850 - margin.left - margin.right,
+                            height = 950 - margin.top - margin.bottom;
 
                         //add for teamwise color legend  TODO : need to working
 
@@ -314,7 +357,7 @@
                             return format.parse(d.TaskDate);
                         }, // Data -> value
 
-                            xScale = d3.time.scale().domain([newMinDate, newMaxDate]).range([0, width], 3.5), // value -> display
+                            xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width], 3.5), // value -> display
                             xMap = function (d) {
                                 // console.log(xScale.domain()[1].toISOString());
                                 return xScale(xValue(d));
@@ -353,7 +396,7 @@
 
                         // don't want dots overlapping axis, so add in buffer to Data domain
 
-                        xScale.domain([newMinDate, newMaxDate]);
+                        xScale.domain([dateMin, dateMax]);
                         yScale.domain([d3.min(Data, yValue) - 1, d3.max(Data, yValue) + 10]);
 
                         //x-axis name
