@@ -1,0 +1,28 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace eCloseDataAccessLayer.Models
+{
+   public class TaskInfo
+    {
+        public string TaskName { get; set; }
+        //value is used for calculate task number
+        public int? value { get; set; }
+        //if any extra param to send
+        public string  extra { get; set; }
+        public string TeamName { get; set; }
+       
+        public int? WorkbasketTaskId { get; set; }
+        public int? DependsOnWorkbasketTaskId { get; set; }
+        [DisplayFormat(DataFormatString = "{0:dd-MMM-yyyy}")]
+        public DateTime? EndDateInt { get; set; }
+        public List<TaskInfo> list { get; set; }
+    }
+    //[Serializable]
+    //public class TaskInfoList : List<TaskInfo>
+    //{ }
+}
