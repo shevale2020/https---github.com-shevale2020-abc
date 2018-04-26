@@ -266,11 +266,14 @@
 
                         var rows = ""
                         $.each(Data, function (index, value) {
-
+                            if (value.TaskTitle == value.DependantTaskName && value.TaskId == value.DependsOnWorkbasketTaskId) {
+                                value.DependantTaskName = "";
+                                value.DependsOnWorkbasketTaskId = "";
+                            }
                             rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
                                 + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
                                 + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
-
+                           
                             if ($.inArray(value.TeamName, TeamNames) == -1) {
                                 TeamNames.push(value.TeamName);
                             }
@@ -411,16 +414,22 @@
                             .style("fill", function (d) {
                                 return color(d.extra);
                             })
-                            //.append("title")
-                            //.text(function (d) { return (d.TaskTitle + "(" + xValue(d) + ", " + yValue(d) + ")") })
-                            .on("mouseover", function (d) {
-                                tooltip.transition()
-                                    .duration(200)
-                                    .style("opacity", 0.9);
-                                tooltip.html("<strong>Task No:</strong> " + d.TaskId + "<br/>" + "<strong>Task Name:</strong> " + d.TaskTitle + "<br/> " + "<strong>Duedate: </strong>" + d.TaskDate)
-                                .style("left", (d3.event.pageX + 5) + "px")
-                                .style("top", (d3.event.pageY - 28) + "px");
+                            .append("title")
+                            .text(function (d) {
+                                if (d.TaskId == d.DependsOnWorkbasketTaskId && d.TaskTitle == d.DependantTaskName) {
+                                    d.DependsOnWorkbasketTaskId = "";
+                                    d.DependantTaskName = "";
+                                }
+                                return ("(" + d.TaskId + ") " + d.TaskTitle + "(" + d.TaskDate + ") DependentTaskID:-" + d.DependsOnWorkbasketTaskId)
                             })
+                            //.on("mouseover", function (d) {
+                            //    tooltip.transition()
+                            //        .duration(200)
+                            //        .style("opacity", 0.9);
+                            //    tooltip.html("<strong>Task No:</strong> " + d.TaskId + "<br/>" + "<strong>Task Name:</strong> " + d.TaskTitle + "<br/> " + "<strong>Duedate: </strong>" + d.TaskDate)
+                            //    .style("left", (d3.event.pageX + 5) + "px")
+                            //    .style("top", (d3.event.pageY - 28) + "px");
+                            //})
                             .on("mouseout", function (d) {
                                 tooltip.transition()
                                     .duration(500)
@@ -438,6 +447,7 @@
                             .attr('data-sqft', function (e) {
                                 return e.extra;
                             });
+
 
                         //draw line
                         for (var item in Data) {
