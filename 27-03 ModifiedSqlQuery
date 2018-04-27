@@ -1,0 +1,74 @@
+-- task details  
+SELECT TaskDetail.*, 
+       wtu.enddateint 
+  FROM 
+         
+		 (SELECT t1.id           AS WorkbasketTaskId, 
+               t2.dependsonworkbaskettaskid, 
+               t1.taskname, 
+               t5.teamname, 
+               t3.id           AS periodid, 
+               Max(t6.wflevel) AS WFLevel, 
+               'False'         AS ISDependantTask 
+          FROM workbaskettask t1 
+               INNER JOIN dependetworkbaskettasks t2 
+                       ON t2.workbaskettaskid = t1.id 
+               INNER JOIN period t3 
+                       ON t1.periodid = t3.id 
+               INNER JOIN perioddays t4 
+                       ON t3.id = t4.periodid 
+               INNER JOIN team t5 
+                       ON t1.teamid = t5.id 
+               INNER JOIN workbaskettaskusers t6 
+                       ON t6.workbaskettaskid = t1.id 
+		--if need to add filter add here in where condition
+         GROUP BY t1.id, 
+                  t2.dependsonworkbaskettaskid, 
+                  t1.taskname, 
+                  t5.teamname, 
+                  t3.id)TaskDetail 
+
+       INNER JOIN workbaskettaskusers wtu 
+               ON wtu.workbaskettaskid = TaskDetail.workbaskettaskid 
+                  AND wtu.wflevel = TaskDetail.wflevel 
+UNION ALL 
+-- task details of dependant task  
+SELECT TaskDetail.*, 
+       wtu.enddateint 
+  FROM (SELECT t1.id           AS WorkbasketTaskId, 
+               t1.id           AS DependsOnWorkbasketTaskId, 
+               t1.taskname, 
+               t5.teamname, 
+               t3.id           AS periodid, 
+               Max(t6.wflevel) AS WFLevel, 
+               'True'          AS ISDependantTask 
+          FROM workbaskettask t1 
+               INNER JOIN period t3 
+                       ON t1.periodid = t3.id 
+               INNER JOIN perioddays t4 
+                       ON t3.id = t4.periodid 
+               INNER JOIN team t5 
+                       ON t1.teamid = t5.id 
+               INNER JOIN workbaskettaskusers t6 
+                       ON t6.workbaskettaskid = t1.id 
+         WHERE t1.id IN (SELECT DISTINCT t2.dependsonworkbaskettaskid 
+                           FROM workbaskettask t1 
+                                INNER JOIN dependetworkbaskettasks t2 
+                                        ON t2.workbaskettaskid = t1.id 
+                                INNER JOIN period t3 
+                                        ON t1.periodid = t3.id 
+                                INNER JOIN perioddays t4 
+                                        ON t3.id = t4.periodid 
+                                INNER JOIN team t5 
+                                        ON t1.teamid = t5.id 
+                                INNER JOIN workbaskettaskusers t6 
+                                        ON t6.workbaskettaskid = t1.id 
+                        --if you use filter in first query put here same filter in where condition  
+                        ) 
+         GROUP BY t1.id, 
+                  t1.taskname, 
+                  t5.teamname, 
+                  t3.id)TaskDetail 
+       INNER JOIN workbaskettaskusers wtu 
+               ON wtu.workbaskettaskid = TaskDetail.workbaskettaskid 
+                  AND wtu.wflevel = TaskDetail.wflevel 
