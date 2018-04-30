@@ -1,0 +1,136 @@
+  public List<TaskInfo> GetTaskTimelineChartReport(int LocationId, int PeriodId, int tenantId)
+            {
+                //var result = (from WorkbasketTask in context.WorkbasketTasks
+                //                        join Period in context.Periods
+                //                        on WorkbasketTask.PeriodId equals Period.Id
+                //                        join PeriodDay in context.PeriodDays
+                //                        on Period.Id equals PeriodDay.PeriodId
+                //                        join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                //                        on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
+                //                        join DependentTask in context.DependentTasks
+                //                        on WorkbasketTask.TaskId equals DependentTask.TaskId into DependentTaskinfo
+                //                        from DependentTask in DependentTaskinfo.DefaultIfEmpty()
+                //                        join Team in context.Teams
+                //                        on WorkbasketTask.TeamId equals Team.Id into teaminfo
+                //                        from Team in teaminfo.DefaultIfEmpty()
+                //                        join Task in context.Tasks
+                //                        on WorkbasketTask.TaskId equals Task.Id into taskinfo
+                //                        from Task in taskinfo.DefaultIfEmpty()
+                //                        where (WorkbasketTask.TaskId != null) && (WorkbasketTaskUsers.EndDateInt != null) && (Period.PeriodText == PeriodText) && (Period.LocationId == LocationId) && (WorkbasketTask.TenantId == tenantId)
+                //                        group WorkbasketTask by new
+                //                        {
+                //                            WorkbasketTask.TeamId,
+                //                            Team.TeamName,
+                //                            Task.TaskName,
+                //                            WorkbasketTask.TaskId,
+                //                            DependentTask.DependentTaskId,
+                //                            WorkbasketTaskUsers.EndDateInt
+                //                        } into gcs
+                //                        select new
+                //                        {
+                //                            TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                //                            TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                //                            TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                //                            TaskId = (gcs.Key.TaskId == null) ? 0 : gcs.Key.TaskId,
+                //                            DependantTaskId = (gcs.Key.DependentTaskId == null) ? gcs.Key.TaskId : gcs.Key.DependentTaskId,
+                //                            EndDate = gcs.Max(x => (gcs.Key.EndDateInt == null) ? "01/01/2000" : gcs.Key.EndDateInt.ToString()),
+                //                            value = "",
+                //                            extra = ""
+                //                        }).ToList<dynamic>();
+
+
+                eClose_TestingEntities context = new eClose_TestingEntities();
+                TaskInfo list1 = new TaskInfo();
+                list1.list = (from DependetWorkbasketTask in context.DependetWorkbasketTasks
+                              join WorkbasketTask in context.WorkbasketTasks
+                              on DependetWorkbasketTask.WorkbasketTaskId equals WorkbasketTask.Id
+                              join Period in context.Periods
+                              on WorkbasketTask.PeriodId equals Period.Id
+                              join PeriodDays in context.PeriodDays
+                              on Period.Id equals PeriodDays.PeriodId
+                              join Team in context.Teams
+                              on WorkbasketTask.TeamId equals Team.Id
+                              join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                              on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
+                              where (Period.LocationId==203 )&& Period.Id ==110 //106
+                              //                              where (Period.LocationId == LocationId) && (Period.Id == PeriodId) && (WorkbasketTask.TenantId == tenantId)
+                              group WorkbasketTaskUsers by new
+                              {
+                                  //    WorkbasketTaskUsers.EndDateInt,
+                                  DependetWorkbasketTask.WorkbasketTaskId,
+                                  DependetWorkbasketTask.DependsOnWorkbasketTaskId,
+                                  WorkbasketTask.TaskName,
+                                  Team.TeamName
+                              } into gcs
+                              let topp = gcs.Max(x => x.WFLevel)
+                              select new TaskInfo
+                              {
+                                  //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                  TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                  TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                  WorkbasketTaskId = (gcs.Key.WorkbasketTaskId == null) ? 0 : gcs.Key.WorkbasketTaskId,
+                                  DependsOnWorkbasketTaskId = gcs.Key.DependsOnWorkbasketTaskId,
+                                  WFLevel = topp,
+                                  // EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                  value = 0,
+                                  extra = "",
+                                  IsDependantTask = false
+                              }).ToList<TaskInfo>();
+
+                IEnumerable<int?> DependsOnWorkbasketTaskIdList;
+                DependsOnWorkbasketTaskIdList = list1.list.Select(t => t.DependsOnWorkbasketTaskId);
+
+                TaskInfo list3 = new TaskInfo();
+                list3.list = (from WorkbasketTask in context.WorkbasketTasks
+                              join Period in context.Periods
+                              on WorkbasketTask.PeriodId equals Period.Id into Periodinfo
+                              from Period in Periodinfo.DefaultIfEmpty()
+                              join PeriodDays in context.PeriodDays
+                              on Period.Id equals PeriodDays.PeriodId into PeriodDaysinfo
+                              from PeriodDays in PeriodDaysinfo.DefaultIfEmpty()
+                              join Team in context.Teams
+                              on WorkbasketTask.TeamId equals Team.Id into Teaminfo
+                              from Team in Teaminfo.DefaultIfEmpty()
+                              join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                              on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId into WorkbasketTaskUsersinfo
+                              from WorkbasketTaskUsers in WorkbasketTaskUsersinfo.DefaultIfEmpty()
+                              join record in DependsOnWorkbasketTaskIdList
+                              on WorkbasketTask.Id equals record
+                              group WorkbasketTaskUsers by new
+                              {
+                                  // WorkbasketTaskUsers.EndDateInt,
+                                  WorkbasketTask.Id,
+                                  WorkbasketTask.TaskName,
+                                  Team.TeamName
+                              } into gcs
+                              let topp = gcs.Max(x => x.WFLevel)
+                              select new TaskInfo
+                              {
+                                  //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                  TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                  TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                  WorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                  DependsOnWorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                  //  EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                  WFLevel = topp,
+                                  value = 0,
+                                  extra = "",
+                                  IsDependantTask = true
+                              }).ToList<TaskInfo>();
+                List<TaskInfo> TaskList = new List<TaskInfo>();
+                TaskList.AddRange(list1.list.ToList());
+                TaskList.AddRange(list3.list.ToList());
+
+                var userDetaqils = context.WorkbasketTaskUsers;
+                List<TaskInfo> NewTaskList = new List<TaskInfo>();
+                foreach (var task in TaskList)
+                { 
+                    task.EndDateInt = context.WorkbasketTaskUsers.Where(x => x.WorkbasketTaskId == task.WorkbasketTaskId && x.WFLevel == task.WFLevel).First().EndDateInt;
+                    NewTaskList.Add(task);
+                }
+
+                return (NewTaskList);
+
+
+            }
+
