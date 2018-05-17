@@ -1,0 +1,20 @@
+Following thinks are done in dependent and independent graph -
+
+Client side  
+ Customize D3 graph Which will show the the dependency between task of different team.
+ Customize D3 to show relation between the task with Green and Red edge.
+ Customize D3 to show the team-wise color coding to task.  
+ Customize D3 to show independent task on the graph.
+  
+ server side -
+   Create the linq query query which is use to get the team wise data with task details and dependency.
+   Create the linq query query which is use to get the dependent task details.
+   Apply the team wise coding coding logic on generated data .
+   Apply the filter on the data.
+
+   
+ 
+
+ 
+  
+ 
