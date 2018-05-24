@@ -1,0 +1,19 @@
+  foreach (var item in SortedList)
+                            {
+                                if (oldValue != item.EndDateInt.Value.ToShortDateString())
+                                {
+                                    counter = 1;
+                                }
+                                else
+                                {
+                                    if (_newInfo.Where(x => x.WorkbasketTaskId == item.WorkbasketTaskId).Count() == 0)
+                                    { 
+                                    counter++;
+                                    }
+                                }
+                                oldValue = item.EndDateInt.Value.ToShortDateString();
+                                item.value = teamCounter + counter;
+                                item.extra = color.Where(x => x.name == teamname).First().value.ToString();
+                                _newInfo.Add(item);
+
+                            }
