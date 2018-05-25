@@ -1,0 +1,49 @@
+SELECT 
+    [GroupBy1].[K1] AS [Id], 
+    [GroupBy1].[K3] AS [TeamName], 
+    [GroupBy1].[K2] AS [TaskName], 
+    [GroupBy1].[K4] AS [DependsOnWorkbasketTaskId], 
+     CAST( [GroupBy1].[A1] AS int) AS [C1], 
+    0 AS [C2], 
+    N'' AS [C3], 
+    cast(0 as bit) AS [C4]
+    FROM ( SELECT 
+        [Extent1].[Id] AS [K1], 
+        [Extent1].[TaskName] AS [K2], 
+        [Extent3].[TeamName] AS [K3], 
+        [Extent2].[DependsOnWorkbasketTaskId] AS [K4], 
+        MAX([Extent4].[WFLevel]) AS [A1]
+        FROM    [dbo].[WorkbasketTask] AS [Extent1]
+        INNER JOIN [dbo].[DependetWorkbasketTasks] AS [Extent2] ON [Extent1].[Id] = [Extent2].[WorkbasketTaskId]
+        INNER JOIN [dbo].[Team] AS [Extent3] ON [Extent1].[TeamId] = [Extent3].[Id]
+        INNER JOIN [dbo].[WorkbasketTaskUsers] AS [Extent4] ON [Extent1].[Id] = [Extent4].[WorkbasketTaskId]
+        WHERE 94 = [Extent1].[PeriodId]
+        GROUP BY [Extent1].[Id], [Extent1].[TaskName], [Extent3].[TeamName], [Extent2].[DependsOnWorkbasketTaskId]
+    )  AS [GroupBy1]
+
+
+SELECT 
+    [GroupBy1].[K1] AS [Id], 
+    [GroupBy1].[K3] AS [TeamName], 
+    [GroupBy1].[K2] AS [TaskName], 
+     CAST( [GroupBy1].[A1] AS int) AS [C1], 
+    0 AS [C2], 
+    N'' AS [C3], 
+    cast(1 as bit) AS [C4]
+    FROM ( SELECT 
+        [Extent1].[Id] AS [K1], 
+        [Extent1].[TaskName] AS [K2], 
+        [Extent2].[TeamName] AS [K3], 
+        MAX([Extent3].[WFLevel]) AS [A1]
+        FROM    [dbo].[WorkbasketTask] AS [Extent1]
+        INNER JOIN [dbo].[Team] AS [Extent2] ON [Extent1].[TeamId] = [Extent2].[Id]
+        LEFT OUTER JOIN [dbo].[WorkbasketTaskUsers] AS [Extent3] ON [Extent1].[Id] = [Extent3].[WorkbasketTaskId]
+        INNER JOIN  (SELECT 
+            2293 AS [C1]
+            FROM  ( SELECT 1 AS X ) AS [SingleRowTable1]
+        UNION ALL
+            SELECT 
+            2297 AS [C1]
+            FROM  ( SELECT 1 AS X ) AS [SingleRowTable2]) AS [UnionAll1] ON [Extent1].[Id] = [UnionAll1].[C1]
+        GROUP BY [Extent1].[Id], [Extent1].[TaskName], [Extent2].[TeamName]
+    )  AS [GroupBy1]
