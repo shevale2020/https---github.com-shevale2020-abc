@@ -1,0 +1,16 @@
+
+Period : 
+Id	PeriodMonth	PeriodYear	TenantId	LocationId	NegativeDays	PositiveDays	FirstWorkday	IsClosed	RecCreatedBy	RecCretedDate	RecUpdatedBy	RecUpdatedDate	PeriodText	IsFreeze
+
+94	12	2017	42	172	-5	18	2017-12-11	0	261680	2017-12-15 02:17:39.897	261680	2018-03-07 05:54:25.573	Dec-2017	1
+
+
+_____________________
+Id	LocationName	TimeZone	CreatedBy	CreatedOn	UpdatedBy	UpdatedOn	TenantId	IsDeleted	DeletedBy	DeletedOn
+172	India	India Standard Time	261680	2017-11-30 06:38:32.897	NULL	NULL	42	0	NULL	NULL
+
+_______________________-
+Query
+select * from dbo.Period where id=94
+
+select * from Location where id=172
