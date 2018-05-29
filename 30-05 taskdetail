@@ -1,0 +1,88 @@
+3/5/2018	New project Configuration form TFS. Resolving error in project Configuration.
+3/6/2018	Analysis of the task related to time line graph. Analysis of the Template availability related to time line graph for location, team, task , period
+3/7/2018	Implement the demo of the chartjs on line chart and try to send the dynamic value from controller.
+3/8/2018	Implementation of the dynamic value from controller and work on the chartjs Y - axis team data assignment
+3/9/2018	Work on the implementation of scatter chart and analysis of the database structure related to the location, team, task , period for getting required data.
+3/10/2018	weekly off
+3/11/2018	weekly off
+3/12/2018	Work on the implementation D3js line chart and scatter chart for showing graphical representation of graph for location, team, task , period
+3/13/2018	Try to the implementation teleric grand chart ,grapecity fexchart and Metro map
+3/14/2018	Work on the searching and analysis of implementation of the paid control for the representation of timeline graph.
+3/15/2018	Analysis and work on implementation of the Network Graph to show dependency of the team and task.
+3/16/2018	Analysis and work on Network Graph month timeline , year wise filter and dynamic data binding.
+3/17/2018	
+3/18/2018	
+3/19/2018	Analisis the struture of D3 graph. Implement the demo.
+3/20/2018	Work on show points in d3 graph.
+3/21/2018	Work on show points with x axis date format d3 graph demo.
+3/22/2018	Work on the connect the two point in graph, searching the information related.
+3/23/2018	Work on the demo to connection between two point in graph.
+3/24/2018	
+3/25/2018	
+3/26/2018	Work on the  show Connection line between two task on graph with different color.
+3/27/2018	Work on Connection line between two task on graph with different approches 
+3/28/2018	Work on the show the filter on the form
+3/29/2018	Work on the customize legend of x and y axis
+3/30/2018	Work on the applay color to legend
+3/31/2018	
+4/1/2018	
+4/2/2018	Work on the x- axis legend date format.
+4/3/2018	Work on the get data from database using sql query 
+4/4/2018	Work on the get data from database using sql querys into linq.
+4/5/2018	Work on the get  data of dependant task from database using sql querys
+4/6/2018	 dependant task data  query convert into linq.
+4/7/2018	
+4/8/2018	
+4/9/2018	Work on the date format of x - axis task end date data.4
+4/10/2018	Work on the resolve Nuget pakege error after restallation of visual studio 
+4/11/2018	Work on the deployment of task .
+4/12/2018	Work on error resolving which is occure in  deployment of task .
+4/13/2018	Resolving error in linq occure when specific data selected of null record.
+4/14/2018	
+4/15/2018	
+4/16/2018	Resolving team color issue .Work on server side code related to team color.
+4/17/2018	Create seprate query to get dependant task from database.
+4/18/2018	Work on the linq query join .
+4/19/2018	Work on the datefromt of enddate at client and server side.
+4/20/2018	Work on the client side date issue and checking of json data.
+4/21/2018	
+4/22/2018	
+4/23/2018	x axis dateformt changes fro dd-mm- yyy to dd- MM
+4/24/2018	Work on the unit testing of the data in database and graph record with dependancy.
+4/25/2018	Work on the convert report into PDF format seaching the online plugin
+4/26/2018	Work on the convert report into PDF format implimenation  the online plugin
+4/27/2018	Work on the issue of repitaive data becouse of get the data of each wflevel
+4/28/2018	
+4/29/2018	
+4/30/2018	Work on the linq query join . Convert the inner join into left join
+5/1/2018	Work on show independent and dependant data sepratly ,Work on show data show in tabuler format and deployment of task .
+5/2/2018	
+5/3/2018	
+5/4/2018	
+5/5/2018	
+5/6/2018	
+5/7/2018	
+5/8/2018	
+5/9/2018	
+5/10/2018	
+5/11/2018	
+5/12/2018	
+5/13/2018	
+5/14/2018	
+5/15/2018	
+5/16/2018	
+5/17/2018	
+5/18/2018	
+5/19/2018	
+5/20/2018	
+5/21/2018	
+5/22/2018	
+5/23/2018	
+5/24/2018	
+5/25/2018	
+5/26/2018	
+5/27/2018	
+5/28/2018	
+5/29/2018	
+5/30/2018	
+5/31/2018	
