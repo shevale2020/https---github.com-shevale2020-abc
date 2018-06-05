@@ -320,5 +320,61 @@
       "color":"rgb(44, 160, 44)",
       "TeamName":"5-jun-Team8",
       "IsDependantTask":false
+   },
+   {  
+      "TaskTitle":"Team6_Task1",
+      "TaskNumber":9,
+      "TaskDate":"2018-05-02",
+      "TaskId":2403,
+      "extra":"6",
+      "DependsOnWorkbasketTaskId":2404,
+      "DependantTaskDate":"2018-05-02",
+      "DependantTaskNumber":11,
+      "DependantTaskName":"Team6_Task2",
+      "color":"rgb(44, 160, 44)",
+      "TeamName":"5-jun-Team6",
+      "IsDependantTask":false
+   },
+   {  
+      "TaskTitle":"Team6_Task3",
+      "TaskNumber":10,
+      "TaskDate":"2018-05-02",
+      "TaskId":2405,
+      "extra":"6",
+      "DependsOnWorkbasketTaskId":2403,
+      "DependantTaskDate":"2018-05-02",
+      "DependantTaskNumber":9,
+      "DependantTaskName":"Team6_Task1",
+      "color":"rgb(214, 39, 40)",
+      "TeamName":"5-jun-Team6",
+      "IsDependantTask":false
+   },
+   {  
+      "TaskTitle":"Team6_Task1",
+      "TaskNumber":10,
+      "TaskDate":"2018-05-02",
+      "TaskId":2403,
+      "extra":"6",
+      "DependsOnWorkbasketTaskId":2403,
+      "DependantTaskDate":"2018-05-02",
+      "DependantTaskNumber":9,
+      "DependantTaskName":"Team6_Task1",
+      "color":"rgb(44, 160, 44)",
+      "TeamName":"5-jun-Team6",
+      "IsDependantTask":true
+   },
+   {  
+      "TaskTitle":"Team6_Task2",
+      "TaskNumber":11,
+      "TaskDate":"2018-05-02",
+      "TaskId":2404,
+      "extra":"6",
+      "DependsOnWorkbasketTaskId":2404,
+      "DependantTaskDate":"2018-05-02",
+      "DependantTaskNumber":11,
+      "DependantTaskName":"Team6_Task2",
+      "color":"rgb(44, 160, 44)",
+      "TeamName":"5-jun-Team6",
+      "IsDependantTask":true
    }
 ]
