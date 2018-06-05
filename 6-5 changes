@@ -1,0 +1,18 @@
+//search draw line line in view file - change on the view only this line --  if ( Data[item]["DependsOnWorkbasketTaskId"]!="")
+
+
+//draw line
+                        for (var item in Data) {
+                            //console.log(Data[item]["TaskNumber"]);
+                             if ( Data[item]["DependsOnWorkbasketTaskId"]!="")
+                            {
+                                
+                                svg.append("line")
+                                    .attr("x1", xScale(format.parse(Data[item]["TaskDate"])))
+                                    .attr("y1", yScale(Data[item]["TaskNumber"]))
+                                    .attr("x2", xScale(format.parse(Data[item]["DependantTaskDate"])))
+                                    .attr("y2", yScale(Data[item]["DependantTaskNumber"]))
+                                    .attr("stroke-width", 1)
+                                    .attr("stroke", Data[item]["color"]);
+                                 }
+                        }
