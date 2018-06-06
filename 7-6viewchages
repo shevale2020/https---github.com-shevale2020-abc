@@ -1,0 +1,5 @@
+ if (value.DependsOnWorkbasketTaskId != "") {
+                                rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
+                                    + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
+                                    + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                            }
