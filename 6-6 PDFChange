@@ -1,0 +1,24 @@
+   function createPDF() {
+            getCanvas().then(function (canvas) {
+                var
+                    img = canvas.toDataURL("image/png"),
+                    pdf = new jsPDF('p', 'pt', 'A4');
+                var options = {
+                    pagesplit: true
+                };
+
+                //pdf.addHTML($('#divDiscard'), options, function () {
+                //    pdf.save("Graph-html-to-pdf.pdf");
+                //});
+                var width = pdf.internal.pageSize.width;
+                var height = pdf.internal.pageSize.height;
+                pdf.addImage(canvas, 'JPEG', 0, 0, width, height);
+                pdf.save('test11.pdf');
+               // img1 = canvas.toDataURL("image/png"),
+            
+              //  doc.addImage(img, 'JPEG', 20, 20);
+              //  doc.addImage(img1, 'JPEG', 20, 20);
+               // doc.save('Graph-html-to-pdf.pdf');
+                form.width(cache_width);
+            });
+        }
