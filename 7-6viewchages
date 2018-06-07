@@ -3,3 +3,20 @@
                                     + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
                                     + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
                             }
+                            
+                            
+                            ___________________new changes ______________________
+                             <div class="panel-footer">
+            <div class="col-md-6">
+                <label class="radio-inline"><input type="radio" value="2" name="TaskType" checked="checked" >All Task</label>
+                <label class="radio-inline"><input type="radio" value="0" name="TaskType" >Dependent Task</label>
+                <label class="radio-inline"><input type="radio" value="1" name="TaskType">Independent Task</label>
+            </div>
+            <button id="btnReport" class="btn btn-primary" onclick="updateDate()">Generate Graph</button>
+            @*<button type="button" id="create_pdf" value="Generate PDF" class="btn btn-primary" onclick="updateDate()">Generate PDF</button>*@
+            <input type="button" id="create_pdf" value="Generate PDF">
+
+        </div>
+
+
+----------------In java script get value of selected radio use and send value to server- $("input[name='TaskType']:checked").val()
