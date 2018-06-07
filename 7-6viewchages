@@ -1,3 +1,8 @@
+  //view changes for send IndependentTask task value
+  d3.json('../Home/Graphdata?LocationId=' + locationId + '&PeriodId=' + Period + '&IndependentTask=' + $("input[name='TaskType']:checked").val(), function (data) {
+        
+ 
+ 
  if (value.DependsOnWorkbasketTaskId != "") {
                                 rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
                                     + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
