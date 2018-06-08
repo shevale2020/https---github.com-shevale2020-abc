@@ -1,0 +1,51 @@
+// drow dots he search kar tevade function replace kar (                //draw line) parant 
+// draw dots
+
+svg.selectAll(".dot")
+                            .data(Data)
+                            .enter().append("circle")
+                            .attr("class", "dot")
+                            .attr("r", 3.5)
+                            .attr("cx", xMap)
+                            .attr("cy", yMap)
+                            .style("fill", function (d) {
+                                return color(d.extra);
+                            })
+                            .append("title")
+                            .text(function (d) {
+                                var listOfvalueDependsOnWorkbasketTaskId = "";
+                              if (d.DependsOnWorkbasketTaskId != "") {
+                                    listOfvalueDependsOnWorkbasketTaskId = d.DependsOnWorkbasketTaskId + ", ";
+                                   }
+                                                              $.each(Data, function (indexCheack, valueCheack) {
+                                                                       if (d.TaskId == valueCheack.TaskId && d.DependsOnWorkbasketTaskId != valueCheack.DependsOnWorkbasketTaskId) {
+                                                                             listOfvalueDependsOnWorkbasketTaskId = listOfvalueDependsOnWorkbasketTaskId + valueCheack.DependsOnWorkbasketTaskId + ", ";
+                                                                           }
+                                                                       
+                                    
+                                                                    })
+                                
+
+                                if (d.TaskId == d.DependsOnWorkbasketTaskId && d.TaskTitle == d.DependantTaskName) {
+                                    d.DependsOnWorkbasketTaskId = "";
+                                    d.DependantTaskName = "";
+                                }
+                                return ("(" + d.TaskId + ") " + d.TaskTitle + "(" + d.TaskDate + ") DependentTaskID:-" + listOfvalueDependsOnWorkbasketTaskId)
+                            })
+                             .on("mouseout", function (d) {
+                                tooltip.transition()
+                                    .duration(500)
+                                    .style("opacity", 0);
+                            })
+                            .attr('data-title', function (e) {
+                                return e.TaskTitle;
+                            })
+                            .attr('data-value', function (e) {
+                                return e.TaskNumber;
+                            })
+                            .attr('data-date', function (e) {
+                                return e.TaskDate;
+                            })
+                            .attr('data-sqft', function (e) {
+                                return e.extra;
+                            });
