@@ -2,7 +2,8 @@
       // view madhe var rows = "" search kar ani .. $.each... cha code khali dilela replace kar bar 
       
       
-      var rows = ""
+ 
+                           var rows = ""
                         $.each(Data, function (index, value) {
                             if ((value.TaskTitle == value.DependantTaskName && value.TaskId == value.DependsOnWorkbasketTaskId) || IndependentTask == true ) {
                                 value.DependantTaskName = "";
@@ -16,19 +17,27 @@
                                     value.DependsOnWorkbasketTaskId = "";
                                     value.DependantTaskDate = "";
                                 }
-                                rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
-                                    + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
-                                    + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                                if ($("input[name='TaskType']:checked").val() == "0") {
+                                    if (value.DependsOnWorkbasketTaskId != "") {
+                                        rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
+                                            + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
+                                            + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                                    }
+                                }
+                                else {
+                                    rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
+                                           + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
+                                           + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                                }
+
+
+
+                                if ($.inArray(value.TeamName, TeamNames) == -1) {
+                                    TeamNames.push(value.TeamName);
+                                }
+
+                                if ($.inArray(value.TaskDate, TaskEndDates) == -1) {
+                                    TaskEndDates.push(value.TaskDate);
+                                }
                             }
-
-                           
-
-                            if ($.inArray(value.TeamName, TeamNames) == -1) {
-                                TeamNames.push(value.TeamName);
-                            }
-
-                            if ($.inArray(value.TaskDate, TaskEndDates) == -1) {
-                                TaskEndDates.push(value.TaskDate);
-                            }
-
                         });
