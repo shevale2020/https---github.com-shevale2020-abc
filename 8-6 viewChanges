@@ -3,7 +3,8 @@
       
       
  
-                           var rows = ""
+                        var rows = ""
+                        var editData = [];
                         $.each(Data, function (index, value) {
                             if ((value.TaskTitle == value.DependantTaskName && value.TaskId == value.DependsOnWorkbasketTaskId) || IndependentTask == true ) {
                                 value.DependantTaskName = "";
@@ -19,18 +20,12 @@
                                 }
                                 if ($("input[name='TaskType']:checked").val() == "0") {
                                     if (value.DependsOnWorkbasketTaskId != "") {
-                                        rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
-                                            + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
-                                            + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                                        editData.push(Data[index]);
                                     }
                                 }
                                 else {
-                                    rows += "<tr><td>" + value.TaskId + "</td><td>" + value.TaskTitle
-                                           + "</td><td>" + value.TaskDate + "</td><td>" + value.DependsOnWorkbasketTaskId
-                                           + "</td><td>" + value.DependantTaskDate + "</td><td>" + value.DependantTaskName + "</td></tr>";
+                                    editData.push(Data[index]);
                                 }
-
-
 
                                 if ($.inArray(value.TeamName, TeamNames) == -1) {
                                     TeamNames.push(value.TeamName);
