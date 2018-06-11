@@ -1,0 +1,22 @@
+   Please find the -  int teamCounter = 0;          in server side code and replace the below code upto - //here customise column name   this line
+   
+   int teamCounter = 0;
+                        List<TaskInfo> _newInfo = new List<TaskInfo>();
+
+                        foreach (var teamGroup in teamCollection)
+                        {
+                            string teamname = teamGroup.TeamName;
+
+                            
+                              var SortedList = _info.Where(x => x.TeamName == teamname).OrderBy(x => x.EndDateInt.Value.Date.Ticks);
+                            foreach (var item in SortedList)
+                            {
+                               
+                                     ++teamCounter;
+
+                                     item.value = teamCounter;
+                                item.extra = color.Where(x => x.name == teamname).First().value.ToString();
+                                _newInfo.Add(item);
+
+                            }
+                        }
