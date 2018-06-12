@@ -1,0 +1,362 @@
+<link href="~/Content/jquery.dataTables.min.css" rel="stylesheet" />
+<script src="https://cdn.rawgit.com/eligrey/canvas-toBlob.js/f1a01896135ab378aa5c0118eadd81da55e698d8/canvas-toBlob.js"></script>
+<script src="https://cdn.rawgit.com/eligrey/FileSaver.js/e9d941381475b5df8b7d7691013401e171014e89/FileSaver.min.js"></script>
+@*<script src="https://d3js.org/d3.v3.min.js"></script>*@
+<script src="~/Scripts/d3.v3.min.js"></script>
+<link href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css" rel="stylesheet" />
+<script type="text/javascript" language="javascript" src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/0.4.1/html2canvas.js"></script>
+<script src="~/Scripts/jspdf.min.js"></script>
+<script src="~/Scripts/d3.v3.min.js"></script>
+<script src="~/Scripts/jquery-1.12.4.js"></script>
+<script src="~/Scripts/jquery.dataTables.min.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript">
+    var svg = "";
+    function updateDate() {
+
+        var colorData = [];
+        //here add a filter
+
+        if ($('#Location').val() != "0" && $('#Period').val() != "0") {
+            var Period = $('#Period').val();
+            var locationId = $('#Location').val();
+
+            var chart = d3.select("#wrapper");
+            chart.selectAll("svg").remove();
+
+            d3.json('Report/Graphdata?LocationId=' + locationId + '&PeriodId=' + Period + '&TaskType=' + $("input[name='TaskType']:checked").val(), function (data) {
+                console.log(data);
+
+                if (data != null || data.empty == true) {
+                    var Data = JSON.parse(data);
+
+                    console.log(Data);
+                    if (Data.length == 0) {
+                        Command: toastr["error"]("Record Not Present related Location and Period ");
+
+                        var tbl = $('#tblTaskRecord');
+                        tbl.empty;
+                        tbl.addClass("hidden");
+                        return false;
+                    }
+                    else {
+                        //lagend TeamNames
+                        var TeamNames = [];
+                        var TaskEndDates = [];
+
+                        var rows = ""
+                        var editData = [];
+                        $.each(Data, function (index, value) {
+                            if ((value.TaskTitle == value.DependantTaskName && value.TaskId == value.DependsOnWorkbasketTaskId) || TaskType == true) {
+                                value.DependantTaskName = "";
+                                value.DependsOnWorkbasketTaskId = "";
+                                value.DependantTaskDate = "";
+                            }
+
+                            if (value.DependsOnWorkbasketTaskId != "") {
+                                if (value.DependsOnWorkbasketTaskId == null) {
+                                    value.DependantTaskName = "";
+                                    value.DependsOnWorkbasketTaskId = "";
+                                    value.DependantTaskDate = "";
+                                }
+                                if ($("input[name='TaskType']:checked").val() == "0") {
+                                    if (value.DependsOnWorkbasketTaskId != "") {
+                                        editData.push(Data[index]);
+                                    }
+                                }
+                                else {
+                                    editData.push(Data[index]);
+                                }
+
+                                if ($.inArray(value.TeamName, TeamNames) == -1) {
+                                    TeamNames.push(value.TeamName);
+                                }
+
+                                if ($.inArray(value.TaskDate, TaskEndDates) == -1) {
+                                    TaskEndDates.push(value.TaskDate);
+                                }
+                            }
+                        });
+
+
+                        var table = $('#tblTaskRecord');
+                        table.empty;
+                        $(function () {
+                            table.removeClass("hidden");
+                            var GridTable = table.dataTable({
+                                destroy: true,
+                                searching: true,
+                                paging: false,
+                                filter: true, // this is for disable filter (search box)
+                                orderMulti: true, // for disable multiple column at once
+                                pageLength: 1000,
+                                bJQueryUI: true,
+                                aaData: editData,
+                                aoColumns: [
+                                        { mData: 'TaskId', autoWidth: true },
+                                        { mData: 'TaskTitle', autoWidth: true },
+                                        { mData: 'TaskDate', autoWidth: true },
+                                        { mData: 'DependsOnWorkbasketTaskId', autoWidth: true },
+                                        { mData: 'DependantTaskDate', autoWidth: true },
+                                        { mData: 'DependantTaskName', autoWidth: true }
+                                ]
+                            });
+                        });
+
+
+                        var sorted = TaskEndDates.sort();
+                        var minDate = sorted[0];
+                        var maxDate = sorted[sorted.length - 1];
+                        var format = d3.time.format("%Y-%m-%d");
+                        minDate = minDate.split('T')[0];
+                        maxDate = maxDate.split('T')[0];
+
+                        console.log(minDate);
+                        console.log(maxDate);
+
+                        // x axis scal min and maximum Data ...if you to do this dynamaic send the Data for json assign here
+
+                        var dateMin = new Date();
+                        var dateMax = new Date();
+                        dateMax = format.parse(maxDate);
+                        dateMin = format.parse(minDate);
+                        var margin = {
+                            top: 20,
+                            right: 20,
+                            bottom: 30,
+                            left: 10
+                        },
+                            width = 850 - margin.left - margin.right,
+                            height = 950 - margin.top - margin.bottom;
+                        //add for teamwise color legend  TODO : need to working
+
+                        dateMin.setDate(dateMin.getDate() - 1);
+                        var newMinDate = dateMin.toDateString();
+                        newMinDate = new Date(Date.parse(newMinDate));
+
+
+                        dateMax.setDate(dateMax.getDate() + 1);
+                        var newMaxDate = dateMax.toDateString();
+                        newMaxDate = new Date(Date.parse(newMaxDate));
+
+
+                        ///
+                        var xValue = function (d) {
+                            return format.parse(d.TaskDate);
+                        }, // Data -> value
+
+                            xScale = d3.time.scale().domain([dateMin, dateMax]).range([0, width], 3.5), // value -> display
+                            xMap = function (d) {
+
+                                return xScale(xValue(d));
+                            }, // Data -> display
+                            xAxis = d3.svg.axis().scale(xScale).orient("bottom");
+                        var yValue = function (d) {
+                            return d.TaskNumber;
+                        }, // Data -> value
+                            yScale = d3.scale.linear().range([height, 0]), // value -> display
+                            yMap = function (d) {
+                                return yScale(yValue(d));
+                            }, // Data -> display
+                            yAxis = d3.svg.axis().scale(yScale).orient("left");
+                        // setup fill color
+                        var cValue = function (d) {
+                            return d.ownership;
+                        },
+                            color = d3.scale.category10();
+
+                        // add the graph canvas to the body of the webpage
+                        var svg = d3.select("#wrapper").append("svg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
+                            .attr("id", "visualization")
+                            .attr("xmlns", "http://www.w3.org/2000/svg")
+                            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+                        svg.append("rect")
+                           .attr("width", "100%")
+                           .attr("height", "100%")
+                           .attr("fill", "#F7F7F7");
+
+                        // add the tooltip area to the webpage
+                        var tooltip = d3.select("#wrapper").append("div")
+                            .attr("class", "tooltip")
+                            .style("opacity", 0);
+
+                        // don't want dots overlapping axis, so add in buffer to Data domain
+
+                        xScale.domain([dateMin, dateMax]);
+                        yScale.domain([d3.min(Data, yValue) - 1, d3.max(Data, yValue) + 50]);
+
+                        //x-axis name
+                        svg.append("g")
+                            .attr("class", "x axis")
+                            .attr("transform", "translate(0," + height + ")")
+                            .call(xAxis)
+                            .append("text")
+                            .attr("class", "label")
+                            .attr("x", width)
+                            .attr("y", -6)
+                            .style("text-anchor", "end")
+                            .text("Task End Date");
+
+                        // y-axis name
+                        svg.append("g")
+                            .attr("class", "y axis")
+                            .call(yAxis)
+                            .append("text")
+                            .attr("class", "label")
+                            .attr("transform", "rotate(-90)")
+                            .attr("y", 6)
+                            .attr("dy", ".71em")
+                            .style("text-anchor", "end");
+                        //.text();
+                        //var path = svg.append("path")
+                        // .attr("d", line(data))
+                        // .attr("stroke", "steelblue")
+                        // .attr("stroke-width", "1")
+                        // .attr("fill", "none");
+                        // draw dots
+
+                        svg.selectAll(".dot")
+                            .data(Data)
+                            .enter().append("circle")
+                            .attr("class", "dot")
+                            .attr("r", 3.5)
+                            .attr("cx", xMap)
+                            .attr("cy", yMap)
+                            .style("fill", function (d) {
+                                return color(d.extra);
+                            })
+                            .append("title")
+                            .text(function (d) {
+                                var listOfvalueDependsOnWorkbasketTaskId = "";
+                                if (d.DependsOnWorkbasketTaskId != "") {
+                                    listOfvalueDependsOnWorkbasketTaskId = d.DependsOnWorkbasketTaskId + ", ";
+                                }
+
+                                $.each(Data, function (indexCheack, valueCheack) {
+                                    if (d.TaskId == valueCheack.TaskId && d.DependsOnWorkbasketTaskId != valueCheack.DependsOnWorkbasketTaskId) {
+                                        listOfvalueDependsOnWorkbasketTaskId = listOfvalueDependsOnWorkbasketTaskId + valueCheack.DependsOnWorkbasketTaskId + ", ";
+                                    }
+                                })
+
+                                if (d.TaskId == d.DependsOnWorkbasketTaskId && d.TaskTitle == d.DependantTaskName) {
+                                    d.DependsOnWorkbasketTaskId = "";
+                                    d.DependantTaskName = "";
+                                }
+                                return ("(" + d.TaskId + ") " + d.TaskTitle + "(" + d.TaskDate + ") DependentTaskID:-" + listOfvalueDependsOnWorkbasketTaskId)
+                            })
+                             .on("mouseout", function (d) {
+                                 tooltip.transition()
+                                     .duration(500)
+                                     .style("opacity", 0);
+                             })
+                            .attr('data-title', function (e) {
+                                return e.TaskTitle;
+                            })
+                            .attr('data-value', function (e) {
+                                return e.TaskNumber;
+                            })
+                            .attr('data-date', function (e) {
+                                return e.TaskDate;
+                            })
+                            .attr('data-sqft', function (e) {
+                                return e.extra;
+                            });
+
+                        //draw line
+                        for (var item in Data) {
+
+
+                            if (Data[item]["DependsOnWorkbasketTaskId"] != "") {
+                                svg.append("line")
+                                    .attr("x1", xScale(format.parse(Data[item]["TaskDate"])))
+                                    .attr("y1", yScale(Data[item]["TaskNumber"]))
+                                    .attr("x2", xScale(format.parse(Data[item]["DependantTaskDate"])))
+                                    .attr("y2", yScale(Data[item]["DependantTaskNumber"]))
+                                    .attr("stroke-width", 1)
+                                    .attr("stroke", Data[item]["color"]);
+                            }
+                        }
+
+                        // draw legend
+                        var legend = svg.selectAll(".legend")
+                            .data(color.domain())
+                            .enter().append("g")
+                            .attr("class", "legend")
+                            .attr("transform", function (d, i) { return "translate(0," + i * 20 + ")"; });
+
+                        // draw legend colored rectangles
+                        legend.append("rect")
+                            .attr("x", width - 18)
+                            .attr("width", 18)
+                            .attr("height", 18)
+                            .style("fill", color);
+
+                        // draw legend text
+                        legend.append("text")
+                            .attr("x", width - 24)
+                            .attr("y", 9)
+                            .attr("dy", ".35em")
+                            .style("text-anchor", "end")
+                            .text(function (d) {
+                                return (TeamNames[d]);
+                            })
+                    }
+                }
+                else {
+                    Command: toastr["error"](data.Message);
+                    return false;
+                }
+            })
+
+        }
+        else {
+            Command: toastr["error"]("Please Select Location and Period");
+            return false;
+        }
+
+    };
+
+    //d3.select("#download").on("click", function () {
+    //    debugger;
+    //    console.log('abc' + d3.select("#wrapper").append("svg").html());
+    //    d3.select(this)
+    //      .attr("href", 'data:application/octet-stream;base64,' + btoa(d3.select("#wrapper").append("svg").html()))
+    //      .attr("download", "viz.svg")
+    //});
+    d3.select("#create_pdf")
+    .on("click", writeDownloadLink);
+
+    function writeDownloadLink() {
+        try {
+            var isFileSaverSupported = !!new Blob();
+        } catch (e) {
+            alert("blob not supported");
+        }
+
+        var html = d3.select("svg")
+            .attr("title", "test2")
+            .attr("version", 1.1)
+            .attr("xmlns", "http://www.w3.org/2000/svg")
+            .node().parentNode.innerHTML;
+
+        var blob = new Blob([html], { type: "image/svg+xml" });
+        saveAs(blob, "myProfile.svg");
+    };
+
+</script>
