@@ -1,0 +1,369 @@
+@using ECloseBL.Entities;
+@using ECloseWebApp.Models;
+@using ECloseWebApp.BuisnessEntities;
+@{
+    Html.RenderPartial("_Report");
+}
+
+<div class="row" id="landingSection1">
+    <div class="col-lg-4 no-p p-l-sm ">
+        <div class="panel info-box panel-danger">
+
+            <div class="bg-danger p-h-xs p-v-xs">
+                <h6 class="no-s f-s-14 text-center"><i class="fa fa-hourglass" aria-hidden="true"></i> Due Day Missed</h6>
+            </div>
+
+            <div class="panel-body no-s">
+
+                <div class="row">
+                    <div class="col-md-6 text-center ">
+                        <h5 class="no-m m-t-xs  ">PENDING</h5>
+
+                        <a href="" onclick="ShowReportPopup('itemRedP'); return false;" title="Click here"><h1 class="no-m text-danger m-b-xs " id="redPending"> </h1> </a>
+                    </div>
+                    <div class="col-md-6 text-center " id="expR">
+
+                        <h5 class="no-m m-t-xs   "> ACTIONED </h5>
+
+                        <a href="" onclick="ShowReportPopup('itemRedA'); return false;" title="Click here"><h1 class="no-m text-success m-b-xs " id="redActioned"> </h1> </a>
+                    </div>
+
+
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 no-p p-l-xs">
+        <div class="panel info-box  ">
+
+            <div class="bg-success p-h-xs p-v-xs">
+                <h6 class="no-s f-s-14 text-center"><i class="fa fa-hourglass-half" aria-hidden="true"></i> Within Due Day</h6>
+            </div>
+
+
+            <div class="panel-body no-s">
+                <div class="row">
+                    <div class="col-md-6 text-center ">
+                        <h5 class="no-m m-t-xs  ">PENDING</h5>
+
+                        <a href="" onclick="ShowReportPopup('itemGreenP'); return false;" title="Click here"><h1 class="no-m text-danger m-b-xs " id="greenPending"> </h1></a>
+                    </div>
+                    <div class="col-md-6 text-center ">
+
+                        <h5 class="no-m m-t-xs   "> ACTIONED </h5>
+
+                        <a href="" onclick="ShowReportPopup('itemGreenA'); return false;" title="Click here"><h1 class="no-m text-success m-b-xs " id="greenActioned"> </h1></a>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 no-p p-l-xs p-r-sm">
+
+
+        <div class="panel info-box  ">
+
+            <div class="bg-warning p-h-xs p-v-xs">
+                <h6 class="no-s f-s-14 text-center"><i class="fa fa-hourglass-end" aria-hidden="true"></i> Approaching Due Day</h6>
+            </div>
+
+
+            <div class="panel-body no-s">
+
+                <div class="row">
+                    <div class="col-md-12 text-center ">
+                        <h5 class="no-m m-t-xs  ">PENDING</h5>
+
+                        <a href="" onclick="ShowReportPopup('itemOrangeP'); return false;" title="Click here"><h1 class="no-m m-b-xs   text-danger " id="amberPending"> </h1></a>
+                    </div>
+
+
+
+                </div>
+
+
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+
+<div class="" id="landingSection2">
+    <div class="row">
+        <div class="col-md-6 no-p p-l-sm">
+            <div class="panel panel-white ">
+                <div class="panel-heading">
+                    <h3 class="panel-title">My Current Tasks</h3>
+                    <div class="panel-control">
+                        <a href="javascript:void(0);" data-toggle="tooltip" data-placement="top" title="" class="panel-collapse" data-original-title="Expand/Collapse"><i class="icon-arrow-down"></i></a>
+                    </div>
+                </div>
+                <div class="panel-body no-s">
+                    <div class="table-responsive " id="divPendingEntity">
+
+                    </div>
+
+                </div>
+                <div class="panel-footer">
+                    <button class="btn  btn-default btn-flat" id="workBasket">@Html.ActionLink("View All", "Index", "Workbasket", null, null)</button>
+
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 no-p p-l-xs p-r-sm">
+            <div class="panel panel-white">
+                <div class="panel-heading">
+                    <h3 class="panel-title">
+                        Actioned Tasks
+                    </h3>
+                    <div class="panel-control">
+                        <a href="javascript:void(0);" data-toggle="tooltip" data-placement="top" title="" class="panel-collapse" data-original-title="Expand/Collapse"><i class="icon-arrow-down"></i></a>
+                    </div>
+                </div>
+                <div class="panel-body no-s">
+                    <div class="table-responsive  " id="divNonPendingEntity">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- Row -->
+</div>
+
+
+
+
+
+@{
+    Html.RenderPartial("_RowClickForWorkItems");
+}
+
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+        {
+            $('#MultiWBTaskSubmit').hide();
+
+            BindTATs();
+
+            $(BindEntityList());
+
+        }
+    });
+
+
+    function BindTATs() {
+        var tokenId = '@Html.AntiForgeryToken()';
+
+        var priorityId = 0;
+        if ($("#priorityFilter").length > 0) {
+            priorityId = $("#priorityFilter").find('option:selected').val();
+        }
+        var userRole = '@SessionWrapper.UserRole';
+
+
+        if (priorityId == null)
+            priorityId = 0;
+
+        $.ajax({
+            url: '@Url.Action("ListTATStatusUser", "Dashboard")',
+            dataType: 'json',
+            data: { priorityId: priorityId, __RequestVerificationToken: $(tokenId).val() },
+            type: "POST",
+            success: function (data) {
+
+                $('#redPending').text(data.Records[0].Count);
+                $('#redActioned').text(data.Records[1].Count);
+                $('#redExpected').text(data.Records[2].Count);
+                $('#amberPending').text(data.Records[3].Count);
+                $('#amberExpected').text(data.Records[4].Count);
+                $('#greenPending').text(data.Records[5].Count);
+                $('#greenActioned').text(data.Records[6].Count);
+                $('#greenExpected').text(data.Records[7].Count);
+
+            }
+        });
+
+    }
+    function BindEntityList() {
+        var tokenId = '@Html.AntiForgeryToken()';
+        var approve = '@Enums.WorkbasketAction.Approve.ToString()';
+        var WIP = '@Enums.WorkbasketAction.WIP.ToString()';
+        var reject = '@Enums.WorkbasketAction.Reject.ToString()';
+        var pending = '@Enums.WorkbasketAction.Pending.ToString()';
+        var pendingReject = '@Enums.WorkbasketAction.PendingReject.ToString()';
+        var close = '@Enums.WorkbasketAction.Close.ToString()';
+        var completed = '@Enums.WorkbasketAction.Completed.ToString()';
+        var hold = '@Enums.WorkbasketAction.Hold.ToString()';
+        //Load and Bind User List to jTable
+        $('#divPendingEntity').jtable({
+            //title: 'Task',
+            paging: true,  //Enables paging
+            pageSize: 10, //Actually this is not needed since default value is 10.
+            sorting: true, //Enables sorting
+            defaultSorting: 'FormattedEndDateInt asc', //Optional. Default sorting on first load.
+
+            actions: {
+                //listAction: '@Url.Action("GetWorkbasketItems", "Dashboard")'
+                listAction: function (postData, jtParams) {
+                    return $.Deferred(function ($dfd) {
+                        $.ajax({
+                            url: 'Dashboard/GetWorkbasketItems?taskName=' + '' + '&jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize + '&jtSorting=' + jtParams.jtSorting + '&statusToGet=' + '@Enums.WorkbasketAction.Pending' + '&userRole=' + '@Enums.Role.Preparer' + '&priorityId=' + $("#priorityFilter").find('option:selected').val(),
+                            type: 'POST',
+                            dataType: 'json',
+                            data: { __RequestVerificationToken: $(tokenId).val() },
+                            success: function (data) {
+                                $dfd.resolve(data);
+                            },
+                            error: function () {
+                                $dfd.reject();
+                            }
+                        });
+                    });
+                }
+            },
+
+            fields: {
+                Id: {
+                    key: true,
+                    create: false,
+                    edit: false
+                },
+
+                Id: {
+                    title: '@LableConstants.WorkBasketTaskId',
+                    list: true,
+                    width: '10%'
+                },
+
+                TaskName: {
+                    title: '@LableConstants.WorkBasketTaskName',
+                    width: '45%'
+                },
+
+                PeriodName: {
+                    title: 'Period',
+                    width: '15%'
+                },
+                Status: {
+                    title: 'Status',
+                    width: '15%'
+                }
+                ,
+                FormattedEndDateInt: {
+                    title: 'Due By',
+                    width: '15%',
+                    display: function (data) {
+                        if (null != data.record.RAGStatus && data.record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.G.ToString()') {
+                            return "<div class='label label-success text-center'>" + data.record.FormattedEndDateInt + "</div>";
+                        }
+                        if (null != data.record.RAGStatus && data.record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.R.ToString()') {
+                            return "<div class='label label-danger text-center'>" + data.record.FormattedEndDateInt + "</div>";
+                        }
+                        if (null != data.record.RAGStatus && data.record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.A.ToString()') {
+                            return "<div class='label label-warning text-center'>" + data.record.FormattedEndDateInt + "</div>";
+                        }
+                        else {
+                            return "<div class='text-center'>" + data.record.FormattedEndDateInt + "</div>";
+                        }
+                    }
+                }
+
+            },
+
+            recordsLoaded: function (event, data) {
+
+
+                RecordsLoadedEvent(event, data);
+
+            }
+
+        });
+        $('#divPendingEntity').jtable('load', { taskName: '', statusToGet: '@Enums.WorkbasketAction.Pending', userRole: '@Enums.Role.Preparer' });
+
+
+
+        $('#divNonPendingEntity').jtable({
+            //  title: 'Task',
+            paging: true,  //Enables paging
+            pageSize: 10, //Actually this is not needed since default value is 10.
+            sorting: true, //Enables sorting
+            defaultSorting: 'Id Desc', //Optional. Default sorting on first load.
+
+            actions: {
+                //listAction: '@Url.Action("GetWorkbasketItems", "Dashboard")'
+                listAction: function (postData, jtParams) {
+                    return $.Deferred(function ($dfd) {
+                        $.ajax({
+                            url: 'Dashboard/GetWorkbasketItems?taskName=' + '' + '&jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize + '&jtSorting=' + jtParams.jtSorting + '&statusToGet=' + '@string.Empty' + '&userRole=' + '@Enums.Role.Preparer' + '&priorityId=' + $("#priorityFilter").find('option:selected').val(),
+                            type: 'POST',
+                            dataType: 'json',
+                            data: { __RequestVerificationToken: $(tokenId).val() },
+                            success: function (data) {
+                                $dfd.resolve(data);
+                            },
+                            error: function () {
+                                $dfd.reject();
+                            }
+                        });
+                    });
+                }
+            },
+
+            fields: {
+                Id: {
+                    key: true,
+                    create: false,
+                    edit: false,
+                    list: false
+                },
+
+                Id: {
+                    title: '@LableConstants.WorkBasketTaskId',
+                    list: true,
+                    width: '15%'
+                },
+
+                TaskName: {
+                    title: '@LableConstants.WorkBasketTaskName',
+                    width: '55%'
+                },
+                PeriodName: {
+                    title: 'Period',
+                    width: '15%'
+                }
+                ,
+                Status: {
+                    title: 'Status',
+                    width: '15%'
+                }
+
+
+            },
+
+            recordsLoaded: function (event, data) {
+
+                RecordsLoadedEvent(event, data);
+
+            }
+
+
+        });
+        $('#divNonPendingEntity').jtable('load', { taskName: '', statusToGet: '@string.Empty', userRole: '@Enums.Role.Preparer' });
+
+
+    }
+
+
+
+
+
+</script>
