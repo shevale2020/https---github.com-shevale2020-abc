@@ -1,0 +1,6 @@
+ // task id jithe kadalay java script madhe tithe tak  
+ 
+ var taskid = $(this).text().substring($(this).text().indexOf('(') + 1, $(this).text().indexOf(')'))
+        var newText = $(this).text().substring($(this).text().indexOf(')') + 2);
+        var taskTitle = newText.substring(0, newText.indexOf('('))
+        alert(taskTitle)
