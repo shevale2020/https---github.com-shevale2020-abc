@@ -1,8 +1,13 @@
+@using ECloseWebApp.Models;
+@using ECloseWebApp.BuisnessEntities;
+@using ECloseBL.Entities;
 @model int
 @{
-    ViewBag.Title = "TeamTaskDetailsReport";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+   ViewBag.Title = "TeamTaskDetailsReport";
+    //Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link href="~/Scripts/jtable/themes/metro/eclose-default/jtable.min.css" rel="stylesheet" />
+<script src="~/Scripts/jtable/jquery.jtable.min.js"></script>
 <input type="hidden" id="NoOfActionButtons" />
 <div class="panel-footer" id="MultiWBTaskSubmit">
     <button class="btn btn-primary  " title="Submit">Submit</button>
@@ -113,32 +118,27 @@
                                         </div>
 
 
-                                        <div id="divWFAction" class="row" hidden="hidden">
-                                            @{
-                                                Html.RenderPartial("~/Views/Workbasket/_WFAction.cshtml");
-                                            }
-                                        </div>
 
-                                        <div class="clearfix"></div>
-                                        <div id="divWorkflowChart">
-                                        </div>
-                                        <div class="clearfix"></div>
+                                    <div class="clearfix"></div>
+                                    <div id="divWorkflowChart">
                                     </div>
+                                    <div class="clearfix"></div>
                                 </div>
                             </div>
-                            <div class="clearfix"></div>
-
                         </div>
-                        <div role="tabpanel" class="tab-pane fade" id="divActionHistory">
-                        </div>
-                        <div role="tabpanel" class="tab-pane fade" id="divDependsOnTask">
-                        </div>
+                        <div class="clearfix"></div>
 
                     </div>
+                    <div role="tabpanel" class="tab-pane fade" id="divActionHistory">
+                    </div>
+                    <div role="tabpanel" class="tab-pane fade" id="divDependsOnTask">
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
+</div>
 </div>
 
 
@@ -170,7 +170,7 @@
 
 
     $(document).ready(function () {
-
+        var tokenId = '@Html.AntiForgeryToken()';
         //---Action history starts here-------
         $('#divActionHistory').jtable({
             // title: ' ',
@@ -178,10 +178,11 @@
             pageSize: 10,
             actions: {
                 listAction: function (postData, jtParams) {
+                    debugger;
                     var workbasketId ='@Model';
                     return $.Deferred(function ($dfd) {
                         $.ajax({
-                            url: 'Workbasket/GetActionLogByWorkbasketTaskId?workbasketTaskId=' +  workbasketId + '&jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize,
+                            url: 'Workbasket/GetActionLogByWorkbasketTaskId?workbasketTaskId=' + '@Model' + '&jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize,
                             type: 'POST',
                             dataType: 'json',
                             data: {__RequestVerificationToken : $(tokenId).val()},
@@ -272,10 +273,13 @@
             // title: ' ',
             actions: {
                 listAction: function (postData, jtParams) {
+                    debugger;
+                    console.log(@Model);
                     var workbasketId = '@Model';
+                    alert(workbasketId);
                     return $.Deferred(function ($dfd) {
                         $.ajax({
-                            url: 'Workbasket/GetDependsOnTaskByWorkbasketTaskId?workbasketTaskId=' +  workbasketId ,
+                            url: 'Workbasket/GetDependsOnTaskByWorkbasketTaskId?workbasketTaskId=' + '@Model',
                             type: 'POST',
                             dataType: 'json',
                             data: {__RequestVerificationToken : $(tokenId).val()},
@@ -327,7 +331,7 @@
 
 
         $.ajax({
-            url: 'Workbasket/GetWorkitemsFromworkbasketTaskId?workbasketTaskId=' + '@Model',
+            url: 'Report/GetWorkitemsFromworkbasketTaskId?workbasketTaskId=' + '@Model',
             type: 'POST',
             dataType: 'json',
             data: { __RequestVerificationToken: $(tokenId).val() },
@@ -387,7 +391,10 @@
             $('#textPeriod').val(record.PeriodName);
             $('#textPriority').val(record.Priority);
             $('#textDescription').val(record.Description);
-            $('#NoOfActionButtons').val(record.ActionsCanBeTakenAgainstWBTaskId.length);
+            if (null != record.ActionsCanBeTakenAgainstWBTaskId)
+            {
+                $('#NoOfActionButtons').val(record.ActionsCanBeTakenAgainstWBTaskId.length);
+            }
             if (null != record.RAGStatus && record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.G.ToString()') {
 
                 $("#imgRagStatus").attr("class", "text-success indicator");
@@ -424,7 +431,7 @@
             //---Start rendering workFlowChart-------
             var tokenId = '@Html.AntiForgeryToken()';
             var urlForChart = '@Url.Action("GetUsersLevelAssignmentForFlowChart", "Workbasket")';
-            $('#divWorkflowChart').load(urlForChart, { workbasketTaskId: record.Id ,__RequestVerificationToken : $(tokenId).val() }, function () {
+        $('#divWorkflowChart').load(urlForChart, { workbasketTaskId: '@Model', __RequestVerificationToken: $(tokenId).val() }, function () {
             });
             //----end rendering workFlowChart-----------------
 
