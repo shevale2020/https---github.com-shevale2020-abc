@@ -1,0 +1,439 @@
+@using ECloseWebApp.Models;
+@using ECloseWebApp.BuisnessEntities;
+@using ECloseBL.Entities;
+@model int
+@{
+    ViewBag.Title = "TeamTaskDetailsReport";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<input type="hidden" id="NoOfActionButtons" />
+<div class="panel-footer" id="MultiWBTaskSubmit">
+    <button class="btn btn-primary  " title="Submit">Submit</button>
+</div>
+<div id="divWorkbasket">
+
+
+    <div class="panel  no-s">
+
+        <div class="panel-body bg-light no-p p-v-xs ">
+            <h3 class="pull-left no-s">
+                <span class="indicator" id="imgRagStatus"><i class="fa fa-dot-circle-o fa-lg"></i></span>
+
+                @*<label><strong>Task @LableConstants.WorkBasketTaskId : </strong></label>*@
+
+                <input type="text" value="" id="textTaskId" disabled="disabled" class="form-control-static" />
+
+                @*<label><strong>Task @LableConstants.WorkBasketTaskName :</strong></label>*@
+                <input type="text" value="" id="textTaskName" disabled="disabled" class="form-control-static" />
+
+                <label><strong>Team :</strong></label>
+                <input type="text" value="" id="textTeam" disabled="disabled" class="form-control-static" />
+
+                <label><strong>Status :</strong></label>
+
+                <input type="text" value="" id="textStatus" disabled="disabled" class="form-control-static" />
+
+
+            </h3>
+            <div class="pull-right" id="divBack">
+                <button type="submit" id="btnBack" class="btn btn-secondary">
+                    Back
+                </button>
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="panel panel-white">
+        <div class="panel-body">
+            <div class="row">
+                <div class="col-md-3">
+
+                    <ul class="list-group bg-light">
+                        @*<li class="list-group-item bg-n">
+                                <label><strong>Team :</strong></label>
+                                <input type="text" value="" id="textTeam" disabled="disabled" class="form-control-static" />
+                            </li>
+                            <li class="list-group-item bg-n">
+                                <label><strong>Status :</strong></label>
+                                <input type="text" value="" id="textStatus" disabled="disabled" class="form-control-static" />
+                            </li>*@
+                        <li class="list-group-item bg-n"><label><strong>Workflow :</strong></label> <input type="text" value="" id="textWorkflow" disabled="disabled" class="form-control-static" /></li>
+                        <li class="list-group-item bg-n"><label><strong>Next Approver :</strong></label> <input type="text" value="" id="textNextApprover" disabled="disabled" class="form-control-static" /></li>
+                        <li class="list-group-item bg-n"><label><strong>Current Level :</strong></label><input type="text" value="" id="textCurrentLevel" disabled="disabled" class="form-control-static" /></li>
+                        <li class="list-group-item bg-n">
+                            <label><strong>Period :</strong></label><input type="text" value="" id="textPeriod" disabled="disabled" class="form-control-static" />
+                        </li>
+                        <li class="list-group-item bg-n"><label><strong>Priority :</strong></label><input type="text" value="" id="textPriority" disabled="disabled" class="form-control-static" /></li>
+                        <li class="list-group-item bg-n">
+                            <label><strong>Description :</strong></label><textarea id="textDescription" disabled="disabled" cols="40" rows="3" class="form-control form-control-static"></textarea>
+                        </li>
+                    </ul>
+
+
+
+                </div>
+                <div role="tabpanel" class="col-md-9  ">
+                    <!-- Nav tabs -->
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="active"><a href="#tab9" role="tab" data-toggle="tab">TASK ACTIONABLE</a></li>
+                        <li role="presentation"><a href="#divActionHistory" role="tab" data-toggle="tab"> ACTION HISTORY (<strong id="spnActionHistory">0</strong>)</a></li>
+                        <li role="presentation"><a href="#divDependsOnTask" role="tab" data-toggle="tab"> DEPENDENCY (<strong id="spnDependancy">0</strong>)</a></li>
+                    </ul>
+                    <!-- Tab panes -->
+                    <div class="tab-content no-s">
+                        <div role="tabpanel" class="tab-pane p active fade in" id="tab9">
+                            <div class="row">
+
+                                <div class="panel-body ">
+                                    <div id="divReconciliationFile">
+                                        <input type="hidden" id="WorkbasketTaskIdForFileUploading" />
+                                        <div id="divFileUploading">
+
+                                            <div class="form-group">
+                                                <label title="upload file">
+                                                    Upload File :
+                                                </label>
+
+                                                <div id="progress" class="loading-bg" style="display:none;position:fixed;background:rgba(255, 255, 255, 0.7);width:100%;height:100%;left:0;top:0;z-index:3;">
+                                                    <img id="progress_image" src='@Url.Content("~/Scripts/Template/adminlte/img/loader.gif")' alt="">
+                                                    @*Please wait. Uploading in progress…*@
+                                                </div>
+                                                <div id="fileDialog" class="input-group">
+
+                                                    <input type="file" multiple name="FileUpload" id="uploadFile" class="form-control" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />@*onchange="check_extension(this.value,'btnUploadFile');"*@
+                                                    <span class="input-group-btn">
+                                                        <input type="submit" name="Upload" id="btnUploadFile" value="Upload" class="btn btn-primary" onclick="UploadFile()" />@*disabled="disabled"*@
+
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        <div id="divTaskFile">
+
+                                        </div>
+
+
+                                        <div id="divWFAction" class="row" hidden="hidden">
+                                            @*@{
+                                                Html.RenderPartial("~/Views/Workbasket/_WFAction.cshtml");
+                                            }*@
+                                        </div>
+
+                                        <div class="clearfix"></div>
+                                        <div id="divWorkflowChart">
+                                        </div>
+                                        <div class="clearfix"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="clearfix"></div>
+
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="divActionHistory">
+                        </div>
+                        <div role="tabpanel" class="tab-pane fade" id="divDependsOnTask">
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script type="text/javascript">
+    //$(function () {
+    //    $("#accordion").accordion({
+    //        heightStyle: "content"
+    //    });
+    //});
+    jQuery(function ($) {
+        var $active = $('#accordion .panel-collapse.in').prev().addClass('active');
+        //$active.find('a').prepend('<i class="glyphicon glyphicon-minus"></i>');
+        //$('#accordion .panel-heading').not($active).find('a').prepend('<i class="glyphicon glyphicon-plus"></i>');
+        $('#accordion').on('show.bs.collapse', function (e) {
+            $('#accordion .panel-heading.active').removeClass('active').find('.glyphicon').toggleClass('glyphicon-plus glyphicon-minus');
+            $(e.target).prev().addClass('active').find('.glyphicon').toggleClass('glyphicon-plus glyphicon-minus');
+        })
+    });
+    function toggleIcon(e) {
+        $(e.target)
+            .prev('.panel-heading')
+            .find(".more-less")
+            .toggleClass('glyphicon-plus glyphicon-minus');
+
+    }
+    $('.panel-group').on('hidden.bs.collapse', toggleIcon);
+    $('.panel-group').on('shown.bs.collapse', toggleIcon);
+
+
+
+    $(document).ready(function () {
+
+        //---Action history starts here-------
+        $('#divActionHistory').jtable({
+            // title: ' ',
+            paging: true,
+            pageSize: 10,
+            actions: {
+                listAction: function (postData, jtParams) {
+                    debugger;
+                    var workbasketId ='@Model';
+                    return $.Deferred(function ($dfd) {
+                        $.ajax({
+                            url: 'Workbasket/GetActionLogByWorkbasketTaskId?workbasketTaskId=' +  workbasketId + '&jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize,
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {__RequestVerificationToken : $(tokenId).val()},
+                            success: function (data) {
+                                $dfd.resolve(data);
+                            },
+                            error: function () {
+                                $dfd.reject();
+                            }
+                        });
+                    });
+                },
+            },
+
+            fields: {
+                Id: {
+                    key: true,
+                    create: false,
+                    edit: false,
+                    list: false
+                },
+                WorkbasketTaskId: {
+                    list: false
+                },
+                SrNo: {
+                    title: 'Sr. No.',
+                    create: false,
+                    edit: false,
+                    width: '5%',
+                    sorting: false
+                },
+                Action: {
+                    title: 'Action',
+                    width: '23%'
+                },
+                Reason: {
+                    title: 'Reason',
+                    width: '23%'
+                },
+                Comments: {
+                    title: 'Comments',
+                    width: '23%'
+                },
+                FormattedActionedOn: {
+                    title: 'Actioned On',
+                    width: '23%'
+                },
+                WorkflowLevelName: {
+                    title: 'Workflow Level',
+                    width: '23%'
+                },
+                Cycle: {
+                    title: 'Attempt'
+                },
+                UserName: {
+                    title: 'User'
+                }
+            },
+            recordsLoaded: function (event, data) {
+                //$('#spnActionHistory').text(data.records[0].TotalRecords);
+                $('#spnActionHistory').text(data.records.length);
+                var pagenumber = $('#divActionHistory .jtable-goto-page select option:selected').val();
+                var pagesize = $('#divActionHistory .jtable-page-size-change select option:selected').val();
+                var SrNo = pagesize * pagenumber - pagesize;
+                if (data.records) {
+                    $.each(data.records, function (index, record) {
+                        var row = $('#divActionHistory').jtable('getRowByKey', record.Id);
+                        SrNo++;
+                        row.find('td:eq(0)').text(SrNo);
+                        row.find('td:eq(3)').addClass('jtable-td');
+                        var commentsTd = row.find('td:eq(3)');
+                        var titleVal = commentsTd.text();
+                        if (typeof titleVal === "string" && titleVal !== '') {
+                            commentsTd.attr('title', titleVal);
+                        }
+
+                    });
+                }
+            }
+
+
+        });
+        //---------Action history ends here----
+
+
+        //---Depends on task starts here-----------------------
+        $('#divDependsOnTask').jtable({
+            // title: ' ',
+            actions: {
+                listAction: function (postData, jtParams) {
+                    debugger;
+                    var workbasketId = '@Model';
+                    return $.Deferred(function ($dfd) {
+                        $.ajax({
+                            url: 'Workbasket/GetDependsOnTaskByWorkbasketTaskId?workbasketTaskId=' +  workbasketId ,
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {__RequestVerificationToken : $(tokenId).val()},
+                            success: function (data) {
+                                $dfd.resolve(data);
+                            },
+                            error: function () {
+                                $dfd.reject();
+                            }
+                        });
+                    });
+                },
+            },
+
+            fields: {
+                Id: {
+                    key: true,
+                    create: false,
+                    edit: false,
+                    list: false
+                },
+                Location:{
+                    title: 'Location'
+                },
+                TeamName: {
+                    title: 'Team'
+                },
+                TaskName: {
+                    title: 'WorkBasketTaskName'
+                },
+                Status: {
+                    title: 'Status',
+                    edit: false,
+                },
+                TaskAtLevel: {
+                    title: 'Current Level',
+                    sorting: false
+                },
+                NextApprover: {
+                    title: 'Next Approver',
+                    sorting: false
+                }
+            },
+            recordsLoaded: function (event, data) {
+                $('#spnDependancy').text(data.records.length);
+            }
+        });
+        //---------Depends on task ends here----
+
+
+        $.ajax({
+            url: 'Workbasket/GetWorkitemsFromworkbasketTaskId?workbasketTaskId=' + '@Model',
+            type: 'POST',
+            dataType: 'json',
+            data: { __RequestVerificationToken: $(tokenId).val() },
+            success: function (data) {
+                RecordsLoadedEvent(data);
+
+            },
+            error: function () {
+                $dfd.reject();
+            }
+        });
+    });//---document.ready ends here
+
+    function RecordsLoadedEvent(record) {
+        var hold='';
+        var wip='';
+        $('.jtable-data-row td:nth-child(1)').css('text-decoration', 'underline');
+        $('.jtable-data-row td:nth-child(1)').css('color', '#337ab7');
+        $('.jtable-data-row').css('cursor', 'pointer');
+        $('#divBack').hide();
+        $('#divReconciliationFile').hide();
+        $('#divWorkbasket').hide();
+        $('#divBusinessUnitDD').show();
+
+            //-- set navigation text
+            $("#moduleName").text("Task Details");
+            //----------------------
+
+            document.getElementById("progress").style.display = 'none';
+            $('#divEntity').hide();
+            $('#MultiWBTaskSubmit').hide();
+            $('#divDashboard').hide();
+            $('#divHeader').hide();
+            $('#divFilter').hide();
+            $('#accordion').show();
+            $('#divBack').show();
+            $('#divReconciliationFile').show();
+            $('#divWorkbasket').show();
+            $('#divBusinessUnitDD').hide();
+            //Hiding Landing Dashboard Starts
+            $('#landingSection1').hide();
+            $('#landingSection2').hide();
+            //Hiding Landing Dashboard Ends
+            $('#divActionHistory').jtable('load', { WorkbasketTaskId: record.Id });
+            $('#divDependsOnTask').jtable('load', { WorkbasketTaskId: record.Id });
+
+            //--------RenderActionButtons on next page/row click---------------------------------------------------------------------
+
+            //---load values for workbasket required  on next page
+            $('#textTaskId').val(record.Id);
+            $('#textTeam').val(record.TeamName);
+            $('#textTaskName').val(record.TaskName);
+            $('#textStatus').val(record.Status);
+            $('#textNextApprover').val(record.NextApprover);
+            $('#textCurrentLevel').val(record.TaskAtLevelText);
+            $('#textWorkflow').val(record.WorkflowName);
+            $('#textPeriod').val(record.PeriodName);
+            $('#textPriority').val(record.Priority);
+            $('#textDescription').val(record.Description);
+            $('#NoOfActionButtons').val(record.ActionsCanBeTakenAgainstWBTaskId.length);
+            if (null != record.RAGStatus && record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.G.ToString()') {
+
+                $("#imgRagStatus").attr("class", "text-success indicator");
+            }
+            else if (null != record.RAGStatus && record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.R.ToString()') {
+                $("#imgRagStatus").attr("class", "text-danger indicator");
+            }
+            else if (null != record.RAGStatus && record.RAGStatus.replace(/ /g, '') == '@Enums.RAGStatus.A.ToString()') {
+                $("#imgRagStatus").attr("class", "text-warning indicator");
+            }
+            else { $("#imgRagStatus").attr("class", "indicator"); }
+            //---end--load values ----------------------------
+
+            //check if its last approval to avoid alert msg for next approver
+            if ($('#IsLastApproval').length) {
+                var IsLastApproval = (record.LastLevelForApproval == record.TaskAtLevel) ? true : false;
+                $('#IsLastApproval').val(IsLastApproval);
+            }
+            //--------------end last approval check
+
+            //check if its status is closed to avoid 'rendering of ActionDD
+            var IsClose = (record.Status == '@Enums.WorkbasketAction.Close.ToString()' ||  !record.CanStart) ? true : false;
+            if (IsClose) {
+                $('#divWFAction').hide();
+            }
+            else {
+                $('#divWFAction').show();
+                RenderActionButtons(record.WorkFlowId, record.Status, record.TaskAtLevel, record.LoginedUserAssignedAtLevel, record.NextApprover);
+            }
+            //-------------------------------------------------
+
+            //----------end Render Action Buttons--------------------------------------------------------------------------------------
+
+            //---Start rendering workFlowChart-------
+            var tokenId = '@Html.AntiForgeryToken()';
+            var urlForChart = '@Url.Action("GetUsersLevelAssignmentForFlowChart", "Workbasket")';
+            $('#divWorkflowChart').load(urlForChart, { workbasketTaskId: record.Id ,__RequestVerificationToken : $(tokenId).val() }, function () {
+            });
+            //----end rendering workFlowChart-----------------
+
+            $('#accordion .jtable-title-text').text(record.fileName);
+    }//--------------end of RecordsLoadedEvent
+
+</script>
