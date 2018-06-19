@@ -16,7 +16,7 @@ namespace ECloseWebApp.Controllers
 
     public class ReportController : Controller
     {
-  
+
 
         private string pendingStatus = Enums.WorkbasketAction.Pending.ToString();
         ReportClass cls = new ReportClass();
@@ -78,7 +78,7 @@ namespace ECloseWebApp.Controllers
             LocationClass locClass = new LocationClass();
             var locations = locClass.List(tenantId);
             var vm = new ViewModelForBusinessUnitDD();
-        
+
             foreach (var location in locations)
             {
                 vm.Location.Add(new SelectListItem { Text = location.LocationName + ' ' + '[' + location.TimeZone + ']', Value = location.Id.ToString() });
@@ -94,10 +94,10 @@ namespace ECloseWebApp.Controllers
 
         }
 
-     
+
         [HttpGet]
         [CustomAuthorization(Enums.Role.Supervisor, Enums.Role.TenantAdmin, Enums.Role.Controller)]
-        public JsonResult Graphdata(int LocationId, int PeriodId,int TaskType = 2)
+        public JsonResult Graphdata(int LocationId, int PeriodId, int TaskType = 2)
         {
             //Create sample data
             try
@@ -133,7 +133,7 @@ namespace ECloseWebApp.Controllers
 
                     List<TaskInfo> minmaxdate = new List<TaskInfo>();
                     minmaxdate = _report.GetTaskMinMaxDate(PeriodId);//.Where(x => x.EndDateInt != null);
-                  
+
                     foreach (var teamGroup in teamCollection)
                     {
                         string teamname = teamGroup.TeamName;
@@ -158,7 +158,7 @@ namespace ECloseWebApp.Controllers
                                 item.EndDate = date.EndDate;
                                 item.StartDate = date.StartDate;
                             }
-                          
+
                             _newInfo.Add(item);
 
                         }
@@ -179,11 +179,11 @@ namespace ECloseWebApp.Controllers
                                      color = _newInfo.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).Count() > 0 ? (i.EndDateInt >= _info.Where(x => x.WorkbasketTaskId == i.DependsOnWorkbasketTaskId).FirstOrDefault().EndDateInt ? "rgb(44, 160, 44)" : "rgb(214, 39, 40)") : "rgb(214, 39, 40)", //green/red color
                                      TeamName = i.TeamName,
                                      IsDependantTask = i.IsDependantTask,
-                                     EndDate=i.EndDate.Value.ToString("yyyy-MM-dd"),
-                                     StartDate=i.StartDate.Value.ToString("yyyy-MM-dd")
+                                     EndDate = i.EndDate.Value.ToString("yyyy-MM-dd"),
+                                     StartDate = i.StartDate.Value.ToString("yyyy-MM-dd")
                                  };
 
-                    
+
 
                     return Json(JsonConvert.SerializeObject(output), JsonRequestBehavior.AllowGet);
                 }
@@ -202,12 +202,10 @@ namespace ECloseWebApp.Controllers
         }
 
 
-        public ActionResult GetPopUpTaskDetails (int Id = 0)
+        public ActionResult GetPopUpTaskDetails(int Id = 0)
 
         {
             return View("_TaskDetails", Id);
-
-
         }
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -216,13 +214,16 @@ namespace ECloseWebApp.Controllers
 
             try
             {
-                //if (null == SessionWrapper.UserEntity)
-                //    return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
-                //UserEntity user = SessionWrapper.UserEntity;
-                //user.TenantId = SessionWrapper.TenantId;
+                if (null == SessionWrapper.UserEntity)
+                    return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+                UserEntity user = SessionWrapper.UserEntity;
+                user.TenantId = SessionWrapper.TenantId;
+                var UserRole = SessionWrapper.UserRole;
+                user.UserID = SessionWrapper.UserId;
                 ReportClass cls = new ReportClass();
+
                 //GetWorkitemsFromWorkBacketID(tenantId,dedicatedStatud,Workbasketid,....)
-                var workitemsDetails = cls.GetWorkitemsFromWorkBacketID(0, "true", workbasketTaskId).FirstOrDefault();
+                var workitemsDetails = cls.GetWorkitemsFromWorkBacketID(user.TenantId, workbasketTaskId, user.UserID, UserRole).FirstOrDefault();
                 return Json(new { Result = "OK", Records = workitemsDetails, TotalRecordCount = 1 });
             }
             catch (Exception ex) { logger.Error(ex.ToString()); return Json(new { Result = "ERROR", Message = ex.Message }); }
