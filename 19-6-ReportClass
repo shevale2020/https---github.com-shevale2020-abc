@@ -13,9 +13,9 @@ using ECloseBL.Entities;
 
 namespace eCloseDataAccessLayer.HelperClasses
 {
-   public class ReportClass
+    public class ReportClass
     {
-          ECloseContext context = new ECloseContext();
+        ECloseContext context = new ECloseContext();
         private string pendingStatus = Enums.WorkbasketAction.Pending.ToString();
         private string closeStatus = Enums.WorkbasketAction.Close.ToString();
         private string rejectStatus = Enums.WorkbasketAction.Reject.ToString();
@@ -579,10 +579,10 @@ namespace eCloseDataAccessLayer.HelperClasses
 
 
 
-       
+
         public List<TaskInfo> GetTaskTimelineChartReport(int LocationId, int PeriodId, int tenantId, int TaskType)
         {
-           
+
             TaskInfo list1 = new TaskInfo();
             //Check the dependant and Independant task 
             if (TaskType == 1)
@@ -598,7 +598,7 @@ namespace eCloseDataAccessLayer.HelperClasses
                               join WorkbasketTaskUsers in context.WorkbasketTaskUsers
                               on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
                               where (WorkbasketTask.PeriodId == PeriodId) && (Period.LocationId == LocationId) && (Period.Id == PeriodId) && (WorkbasketTask.TenantId == tenantId) && (DependetWorkbasketTask.DependsOnWorkbasketTaskId == null)
-                              && (WorkbasketTask.TaskId!=null)
+                              && (WorkbasketTask.TaskId != null)
                               group WorkbasketTaskUsers by new
                               {
                                   //    WorkbasketTaskUsers.EndDateInt,
@@ -792,24 +792,24 @@ namespace eCloseDataAccessLayer.HelperClasses
         public List<TaskInfo> GetTaskMinMaxDate(int PeriodId)
         {
             List<TaskInfo> dateInfo = new List<TaskInfo>();
-            dateInfo = (from  PeriodDay in context.PeriodDays
-                   join Period in context.Periods
-                   on PeriodDay.PeriodId equals Period.Id 
-                   where PeriodDay.PeriodId==PeriodId
-                   group PeriodDay by new
-                   {
-                       PeriodDay.PeriodId,
-                   } into gcs
-                   select new TaskInfo
-                   {
-                       StartDate = gcs.Min(x => x.CalenderDate),
-                       EndDate = gcs.Max(x => x.CalenderDate)
-                   }).ToList<TaskInfo>();
+            dateInfo = (from PeriodDay in context.PeriodDays
+                        join Period in context.Periods
+                        on PeriodDay.PeriodId equals Period.Id
+                        where PeriodDay.PeriodId == PeriodId
+                        group PeriodDay by new
+                        {
+                            PeriodDay.PeriodId,
+                        } into gcs
+                        select new TaskInfo
+                        {
+                            StartDate = gcs.Min(x => x.CalenderDate),
+                            EndDate = gcs.Max(x => x.CalenderDate)
+                        }).ToList<TaskInfo>();
             return dateInfo;
         }
 
         [HttpGet]
-        public List<Workitems> GetWorkitemsFromWorkBacketID(int tenantId = 0, string discardedStatus = "true", int WorkBacketTaskId = 0, int userId = 0, string completedStatus = "", string closeStatus = "", string approveStatus = "")
+        public List<Workitems> GetWorkitemsFromWorkBacketID(int tenantId = 0, int WorkBacketTaskId = 0, int userId = 0, string userRole = "", string completedStatus = "", string closeStatus = "", string approveStatus = "")
         {
             //IQueryable<Workitems> workbasketQuery;
             try
@@ -819,52 +819,52 @@ namespace eCloseDataAccessLayer.HelperClasses
                 using (ECloseContext context = new ECloseContext())
                 {
                     List<Workitems> workitemList = new List<Workitems>();
-                        context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != discardedStatus
-                                                               && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
-                                                               && a.Id == WorkBacketTaskId
-                                                               // user level should match with WorkbasketTask workflow level but if status is closed then level wont match or if user is of level 0 he can see his task pending  at other levels
-                                                               && ((a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0) ?
-                                                               // else show record only if users level matches current level that is reviewrs task 
-                                                               true : (a.WorkflowAction.WorkflowLevel == a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() && a.WorkflowAction.Status != approveStatus))
-                                                               )
-                                                       .Select(c => new
-                                                       {
-                                                           Id = c.Id,
-                                                           TeamName = c.Team.TeamName,
-                                                           TaskName = c.TaskName,
-                                                           Status = c.WorkflowAction.Status,
-                                                           TaskAtLevel = c.WorkflowAction.WorkflowLevel,
-                                                           TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
-                                                           LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
-                                                       // next approver will be blank on approve/Close status
-                                                       NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
-                                                           : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
-                                                                                                 //if logined user lvl not matches task lvl (mostly in case of preparer then show current approver else show next lvl approver)
-                                                                                                 d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
-                                                                                             .Select(e => e.User.UserName).FirstOrDefault(),
-                                                           TotalRecords = 0,
-                                                       //if (TaskAtLevel != LoginedUserAssignedAtLevel) then no action should be displayed. If status is complted then no actions will be there
-                                                       ActionsCanBeTakenAgainstWBTaskId =
-                                                            c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
-                                                                                            && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
-                                                                                            .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
-                                                           CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
-                                                                                                                                          // period name required for creating directory for file upload
-                                                       PeriodName = c.Period.PeriodText,
-                                                           TenantName = c.Team.Location.Tenant.Name,
-                                                           WorkFlowId = c.WorkflowId,
-                                                           WorkflowName = c.Workflow.WorkflowName,
-                                                           PeriodMonth = c.Period.PeriodMonth.ToString(),
-                                                           PeriodYear = c.Period.PeriodYear.ToString(),
-                                                           LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                    context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != discardedStatus
+                                                           && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                           && a.Id == WorkBacketTaskId
+                                                           // user level should match with WorkbasketTask workflow level but if status is closed then level wont match or if user is of level 0 he can see his task pending  at other levels
+                                                           && ((a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0) ?
+                                                           // else show record only if users level matches current level that is reviewrs task 
+                                                           true : (a.WorkflowAction.WorkflowLevel == a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() && a.WorkflowAction.Status != approveStatus))
+                                                           )
+                                                   .Select(c => new
+                                                   {
+                                                       Id = c.Id,
+                                                       TeamName = c.Team.TeamName,
+                                                       TaskName = c.TaskName,
+                                                       Status = c.WorkflowAction.Status,
+                                                       TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                       TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                       LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                           // next approver will be blank on approve/Close status
+                                                           NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                       : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                             //if logined user lvl not matches task lvl (mostly in case of preparer then show current approver else show next lvl approver)
+                                                                                             d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                         .Select(e => e.User.UserName).FirstOrDefault(),
+                                                       TotalRecords = 0,
+                                                           //if (TaskAtLevel != LoginedUserAssignedAtLevel) then no action should be displayed. If status is complted then no actions will be there
+                                                           ActionsCanBeTakenAgainstWBTaskId =
+                                                        c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                        && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                        .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                       CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                      // period name required for creating directory for file upload
+                                                           PeriodName = c.Period.PeriodText,
+                                                       TenantName = c.Team.Location.Tenant.Name,
+                                                       WorkFlowId = c.WorkflowId,
+                                                       WorkflowName = c.Workflow.WorkflowName,
+                                                       PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                       PeriodYear = c.Period.PeriodYear.ToString(),
+                                                       LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
                                                        RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
-                                                           EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
-                                                           Priority = c.Priority1.PriorityName,
-                                                           PriorityCode = c.PriorityId,
-                                                           Description = c.Description,
-                                                           IsAttachmentRequired = c.Tenant.IsAttachmentRequired
-                                                       }
-                                                              ).ToList();
+                                                       EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                       Priority = c.Priority1.PriorityName,
+                                                       PriorityCode = c.PriorityId,
+                                                       Description = c.Description,
+                                                       IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                   }
+                                                          ).ToList();
                     return workitemList;
                 }
             }
@@ -872,7 +872,7 @@ namespace eCloseDataAccessLayer.HelperClasses
             {
                 throw ex;
             }
-                
+
         }
 
     }
