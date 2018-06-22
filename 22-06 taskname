@@ -1,0 +1,33 @@
+________________________CLient side   
+
+var tokenId = '@Html.AntiForgeryToken()';
+        var workbasketId = $(this).text().substring($(this).text().indexOf('(') + 1, $(this).text().indexOf(')'));
+       
+        var newText = $(this).text().substring($(this).text().indexOf(')') + 2);
+        var taskName = newText.substring(0, newText.indexOf('('));
+  
+
+
+        $.ajax({
+            url: 'Report/GetPopUpTaskDetails',
+            data: { taskName: taskName ,Id : workbasketId ,
+
+_________________________server side      
+
+
+     public ActionResult popup(int Id = 0, string taskName)
+            {
+                TaskInfo tsk = new TaskInfo();
+                tsk.WorkbasketTaskId = id;
+                tsk.TaskName = taskName;
+                return View("popup", tsk);
+
+            }
+
+________Parshial View 
+
+
+@model TaskInfo 
+
+// in parshial view code you will get the value @Model.WorkbasketTaskId   and @Model.@Model.WorkbasketTaskId
+
