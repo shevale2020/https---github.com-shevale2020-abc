@@ -1,0 +1,34 @@
+--changes code of existing 
+     <button type="button" id="btnReport" class="btn btn-primary" onclick="updateDate()">Generate Graph</button>
+     
+     
+     -- Add a new 
+         <form id="svgform" method="post" action="/Home/ExportChart">
+        <httpRuntime requestValidationMode="2.0" />
+
+        <input type="hidden" id="output_format" name="output_format" value="">
+        <input type="hidden" id="data" name="data" value="">
+    </form>
+    <button type="button" class="btn btn-success" id="save_as_svg" onclick="submit_download_form()" value="">
+        Save as SVG
+    </button>
+    
+    
+    --script
+    
+    
+<script>
+    function submit_download_form(output_format) {
+        // Get the d3js SVG element
+        var tmp = document.getElementById("wrapper");
+        var svg = tmp.getElementsByTagName("svg")[0];
+        // Extract the data as SVG text string
+        var svg_xml = new XMLSerializer().serializeToString(svg); 
+        // Submit the <FORM> to the server.
+        // The result will be an attachment file to download.
+        var form = document.getElementById("svgform");
+        form['output_format'].value = output_format;
+        form['data'].value = svg_xml;
+        form.submit();
+    }
+</script>
