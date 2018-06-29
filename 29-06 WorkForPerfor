@@ -1,0 +1,9 @@
+
+
+Work on the optimizing of querys get to get data related to graph- 
+Convert the ToList to IEnumerable when it possible to use.
+Use the no tracing.
+Setup unit set case enviroment for observing test performance
+simplify query on performance point of view
+
+Output - able to reduce half of execution time
