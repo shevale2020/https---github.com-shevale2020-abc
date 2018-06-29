@@ -1,0 +1,1 @@
+ <form id="svgform" method="post" action="/Home/ExportChart?__RequestVerificationToken='@Html.AntiForgeryToken()'">
