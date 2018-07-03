@@ -1,0 +1,30 @@
+// at server side make sure HttpPost,ValidateAntiForgeryToken , ValidateInput(false)
+
+          [HttpPost]
+            [ValidateInput(false)]
+            [ValidateAntiForgeryToken]
+            public void ExportChart(string data)
+            {
+                    StringWriter oStringWriter = new StringWriter();
+                    data = HttpUtility.HtmlDecode(data);
+                    data = HttpUtility.UrlDecode(data);
+                    data = System.Uri.UnescapeDataString(data);
+                    oStringWriter.WriteLine(System.Uri.UnescapeDataString(data));
+                    Response.ContentType = "text/plain";
+                    Response.AddHeader("Content-Disposition", String.Format("attachment;filename={0}", ("graph.svg")));
+                    Response.Clear();
+                    using (StreamWriter writer = new StreamWriter(Response.OutputStream))
+                    {
+                        data = oStringWriter.ToString();
+                        writer.Write(oStringWriter.ToString());
+                    }
+                    Response.End();
+            }
+            
+            //on view  @Html.AntiForgeryToken() place in form
+            
+    <form id="svgform" method="post" action="/Home/ExportChart">
+       @Html.AntiForgeryToken()
+        <input type="hidden" id="output_format" name="output_format" value="">
+        <input type="hidden" id="data" name="data" value="">
+    </form>
