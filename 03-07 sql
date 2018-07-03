@@ -1,0 +1,234 @@
+DECLARE @p__linq__6 VARCHAR(100) = 617
+DECLARE @p__linq__0 VARCHAR(100) = 57
+DECLARE @p__linq__1 VARCHAR(100) = 'Discarded'
+DECLARE @p__linq__2 VARCHAR(100) = 617
+DECLARE @p__linq__3 VARCHAR(100) = 2482
+DECLARE @p__linq__4 VARCHAR(100) = N'Perform remeasurement for FS presentation purposes (JEV should auto reverse on the first of next ---'
+DECLARE @p__linq__5 VARCHAR(100) = N'%Perform remeasurement for FS presentation purposes (JEV should auto reverse on the first of next ---%'
+DECLARE @p__linq__7 VARCHAR(100) = 1
+DECLARE @p__linq__8 VARCHAR(100) = 1
+DECLARE @p__linq__9 VARCHAR(100) = 617
+DECLARE @p__linq__13 VARCHAR(100) = 617
+DECLARE @p__linq__14 VARCHAR(100) = N'Completed'
+DECLARE @p__linq__15 VARCHAR(100) = 617
+DECLARE @p__linq__10 VARCHAR(100) = 'Completed'
+DECLARE @p__linq__11 VARCHAR(100) = 'Close'
+DECLARE @p__linq__12 VARCHAR(100) = 'Approve'
+
+	SELECT [Project2].[Id] AS [Id]
+			,[Project2].[PeriodId] AS [PeriodId]
+			,[Project2].[WorkflowId] AS [WorkflowId]
+			,[Project2].[StatusId] AS [StatusId]
+			,[Project2].[TenantId] AS [TenantId]
+			,[Project2].[IsDeleted] AS [IsDeleted]
+			,[Project2].[TaskName] AS [TaskName]
+			,[Project2].[Description] AS [Description]
+			,[Project2].[PriorityId] AS [PriorityId]
+			,[Project2].[Id1] AS [Id1]
+			,[Project2].[WorkflowLevel] AS [WorkflowLevel]
+			,[Project2].[Status] AS [Status]
+			,[Project2].[Id2] AS [Id2]
+			,[Project2].[WFLevel] AS [WFLevel]
+			,[Limit2].[Id] AS [Id3]
+			,[Limit2].[WFLevel] AS [WFLevel1]
+			,[Extent5].[Id] AS [Id4]
+			,[Extent5].[IsClosed] AS [IsClosed]
+			,[Extent6].[Id] AS [Id5]
+			,[Extent7].[Id] AS [Id6]
+			,[Extent7].[TeamName] AS [TeamName]
+			,[Extent7].[LocationId] AS [LocationId]
+			,[Extent8].[Id] AS [Id7]
+			,[Extent8].[WorkflowLevel] AS [WorkflowLevel1]
+			,[Extent8].[Status] AS [Status1]
+			
+			
+		FROM (
+			SELECT [Extent1].[Id] AS [Id]
+				,[Extent1].[PeriodId] AS [PeriodId]
+				,[Extent1].[WorkflowId] AS [WorkflowId]
+				,[Extent1].[StatusId] AS [StatusId]
+				,[Extent1].[TenantId] AS [TenantId]
+				,[Extent1].[IsDeleted] AS [IsDeleted]
+				,[Extent1].[TeamId] AS [TeamId]
+				,[Extent1].[TaskName] AS [TaskName]
+				,[Extent1].[Description] AS [Description]
+				,[Extent1].[PriorityId] AS [PriorityId]
+				,[Extent2].[Id] AS [Id1]
+				,[Extent2].[WorkflowLevel] AS [WorkflowLevel]
+				,[Extent2].[Status] AS [Status]
+				,[Limit1].[Id] AS [Id2]
+				,[Limit1].[WFLevel] AS [WFLevel]
+			FROM [dbo].[WorkbasketTask] AS [Extent1]
+			LEFT JOIN [dbo].[WorkflowActions] AS [Extent2] ON [Extent1].[StatusId] = [Extent2].[Id]
+			OUTER APPLY (
+				SELECT TOP (1) [Extent3].[Id] AS [Id]
+					,[Extent3].[WFLevel] AS [WFLevel]
+				FROM [dbo].[WorkbasketTaskUsers] AS [Extent3]
+				WHERE ([Extent1].[Id] = [Extent3].[WorkbasketTaskId])
+					AND ([Extent3].[UserId] = @p__linq__6)
+					AND (0 = [Extent3].[IsDeleted])
+				) AS [Limit1]
+			) AS [Project2]
+		OUTER APPLY (
+			SELECT TOP (1) [Extent4].[Id] AS [Id]
+				,[Extent4].[WFLevel] AS [WFLevel]
+			FROM [dbo].[WorkbasketTaskUsers] AS [Extent4]
+			WHERE ([Project2].[Id] = [Extent4].[WorkbasketTaskId])
+				AND ([Extent4].[UserId] = @p__linq__6)
+				AND (0 = [Extent4].[IsDeleted])
+			) AS [Limit2]
+		LEFT JOIN [dbo].[Period] AS [Extent5] ON [Project2].[PeriodId] = [Extent5].[Id]
+		LEFT JOIN [dbo].[Period] AS [Extent6] ON [Project2].[PeriodId] = [Extent6].[Id]
+		LEFT JOIN [dbo].[Team] AS [Extent7] ON [Project2].[TeamId] = [Extent7].[Id]
+		LEFT JOIN [dbo].[WorkflowActions] AS [Extent8] ON [Project2].[StatusId] = [Extent8].[Id]
+		
+
+
+
+
+SELECT *
+FROM (
+	SELECT [Project4].[Id] AS [Id]
+		,[Project4].[PeriodId] AS [PeriodId]
+		,[Project4].[WorkflowId] AS [WorkflowId]
+		,[Project4].[StatusId] AS [StatusId]
+		,[Project4].[TenantId] AS [TenantId]
+		,[Project4].[TaskName] AS [TaskName]
+		,[Project4].[Description] AS [Description]
+		,[Project4].[PriorityId] AS [PriorityId]
+		,[Project4].[Id1] AS [Id1]
+		,[Project4].[Id2] AS [Id2]
+		,[Project4].[Id3] AS [Id3]
+		,[Project4].[Id4] AS [Id4]
+		,[Project4].[Id5] AS [Id5]
+		,[Project4].[Id6] AS [Id6]
+		,[Project4].[TeamName] AS [TeamName]
+		,[Project4].[LocationId] AS [LocationId]
+		,[Project4].[Id7] AS [Id7]
+		,[Project4].[WorkflowLevel1] AS [WorkflowLevel]
+		,[Project4].[Status1] AS [Status]
+	FROM (
+		SELECT [Project2].[Id] AS [Id]
+			,[Project2].[PeriodId] AS [PeriodId]
+			,[Project2].[WorkflowId] AS [WorkflowId]
+			,[Project2].[StatusId] AS [StatusId]
+			,[Project2].[TenantId] AS [TenantId]
+			,[Project2].[IsDeleted] AS [IsDeleted]
+			,[Project2].[TaskName] AS [TaskName]
+			,[Project2].[Description] AS [Description]
+			,[Project2].[PriorityId] AS [PriorityId]
+			,[Project2].[Id1] AS [Id1]
+			,[Project2].[WorkflowLevel] AS [WorkflowLevel]
+			,[Project2].[Status] AS [Status]
+			,[Project2].[Id2] AS [Id2]
+			,[Project2].[WFLevel] AS [WFLevel]
+			,[Limit2].[Id] AS [Id3]
+			,[Limit2].[WFLevel] AS [WFLevel1]
+			,[Extent5].[Id] AS [Id4]
+			,[Extent5].[IsClosed] AS [IsClosed]
+			,[Extent6].[Id] AS [Id5]
+			,[Extent7].[Id] AS [Id6]
+			,[Extent7].[TeamName] AS [TeamName]
+			,[Extent7].[LocationId] AS [LocationId]
+			,[Extent8].[Id] AS [Id7]
+			,[Extent8].[WorkflowLevel] AS [WorkflowLevel1]
+			,[Extent8].[Status] AS [Status1]
+		FROM (
+			SELECT [Extent1].[Id] AS [Id]
+				,[Extent1].[PeriodId] AS [PeriodId]
+				,[Extent1].[WorkflowId] AS [WorkflowId]
+				,[Extent1].[StatusId] AS [StatusId]
+				,[Extent1].[TenantId] AS [TenantId]
+				,[Extent1].[IsDeleted] AS [IsDeleted]
+				,[Extent1].[TeamId] AS [TeamId]
+				,[Extent1].[TaskName] AS [TaskName]
+				,[Extent1].[Description] AS [Description]
+				,[Extent1].[PriorityId] AS [PriorityId]
+				,[Extent2].[Id] AS [Id1]
+				,[Extent2].[WorkflowLevel] AS [WorkflowLevel]
+				,[Extent2].[Status] AS [Status]
+				,[Limit1].[Id] AS [Id2]
+				,[Limit1].[WFLevel] AS [WFLevel]
+			FROM [dbo].[WorkbasketTask] AS [Extent1]
+			LEFT JOIN [dbo].[WorkflowActions] AS [Extent2] ON [Extent1].[StatusId] = [Extent2].[Id]
+			OUTER APPLY (
+				SELECT TOP (1) [Extent3].[Id] AS [Id]
+					,[Extent3].[WFLevel] AS [WFLevel]
+				FROM [dbo].[WorkbasketTaskUsers] AS [Extent3]
+				WHERE ([Extent1].[Id] = [Extent3].[WorkbasketTaskId])
+					AND ([Extent3].[UserId] = @p__linq__6)
+					AND (0 = [Extent3].[IsDeleted])
+				) AS [Limit1]
+			) AS [Project2]
+		OUTER APPLY (
+			SELECT TOP (1) [Extent4].[Id] AS [Id]
+				,[Extent4].[WFLevel] AS [WFLevel]
+			FROM [dbo].[WorkbasketTaskUsers] AS [Extent4]
+			WHERE ([Project2].[Id] = [Extent4].[WorkbasketTaskId])
+				AND ([Extent4].[UserId] = @p__linq__6)
+				AND (0 = [Extent4].[IsDeleted])
+			) AS [Limit2]
+		LEFT JOIN [dbo].[Period] AS [Extent5] ON [Project2].[PeriodId] = [Extent5].[Id]
+		LEFT JOIN [dbo].[Period] AS [Extent6] ON [Project2].[PeriodId] = [Extent6].[Id]
+		LEFT JOIN [dbo].[Team] AS [Extent7] ON [Project2].[TeamId] = [Extent7].[Id]
+		LEFT JOIN [dbo].[WorkflowActions] AS [Extent8] ON [Project2].[StatusId] = [Extent8].[Id]
+		) AS [Project4]
+	WHERE (0 = [Project4].[IsDeleted])
+		AND ([Project4].[TenantId] = @p__linq__0)
+		AND (
+			NOT (
+				([Project4].[Status] = @p__linq__1)
+				AND (
+					(
+						CASE 
+							WHEN ([Project4].[Status] IS NULL)
+								THEN cast(1 AS BIT)
+							ELSE cast(0 AS BIT)
+							END
+						) = (
+						CASE 
+							WHEN (@p__linq__1 IS NULL)
+								THEN cast(1 AS BIT)
+							ELSE cast(0 AS BIT)
+							END
+						)
+					)
+				)
+			)
+		AND (
+			EXISTS (
+				SELECT 1 AS [C1]
+				FROM [dbo].[WorkbasketTaskUsers] AS [Extent9]
+				WHERE ([Project4].[Id] = [Extent9].[WorkbasketTaskId])
+					AND ([Extent9].[UserId] = @p__linq__2)
+					AND (0 = [Extent9].[IsDeleted])
+				)
+			)
+		AND ([Project4].[Id] = @p__linq__3)
+		AND (
+			(
+				CASE 
+					WHEN ((CAST(LEN(@p__linq__4) AS INT)) > 0)
+						THEN CASE 
+								WHEN ([Project4].[TaskName] LIKE @p__linq__5)
+									THEN cast(1 AS BIT)
+								WHEN (NOT ([Project4].[TaskName] LIKE @p__linq__5))
+									THEN cast(0 AS BIT)
+								END
+					ELSE cast(1 AS BIT)
+					END
+				) = 1
+			)
+		AND (
+			0 = (
+				CASE 
+					WHEN ([Project4].[WFLevel] IS NULL)
+						THEN cast(0 AS SMALLINT)
+					ELSE [Project4].[WFLevel1]
+					END
+				)
+			)
+		AND (0 = [Project4].[WorkflowLevel])
+		AND ([Project4].[IsClosed] <> 1)
+	
+	) AS [Project6]
