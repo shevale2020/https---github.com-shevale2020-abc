@@ -1,0 +1,122 @@
+																
+		eClose Due Day Report														
+																
+	"Tenant: ABS Demo
+BU/Division-Location : Canada [Canada Central Standard Time]
+Team : All Teams
+Period : Nov-2017"															
+																
+																
+Team			Task Id	Title	Priority			Workflow Level	User	Actioned On	Due By Internal	Due By External		RAG Status Internal	RAG Status External	
+5-jun-Team1			2483	Team1_Task1	High			[P]	Aaron Collins		31-Oct-17 12:40:00	31-Oct-17 19:20:00				
+			2484	Team1_Task2	High			[P]	Aaron Collins		01-Nov-17 21:45:00	01-Nov-17 19:20:00				
+			2485	Team1_Task3	High			[P]	Aaron Collins		02-Nov-17 21:45:00	02-Nov-17 12:38:00				
+			2486	Team1_Task4	High			[P]	Aaron Collins		03-Nov-17 23:32:00	03-Nov-17 23:00:00				
+			2487	Team1_Task5	High			[P]	Aaron Collins		06-Nov-17 23:32:00	06-Nov-17 23:00:00				
+			2488	Team1_Task6	High			[P]	Aaron Collins		07-Nov-17 12:40:00	07-Nov-17 21:00:00				
+			2489	Team1_Task7	High			[P]	Aaron Collins		08-Nov-17 12:40:00	08-Nov-17 12:38:00				
+5-jun-Team10			2490	Team10_Task1	High			[P]	Aaron Collins		15-Nov-17 16:30:00	15-Nov-17 23:00:00				
+			2491	Team10_Task2	High			[P]	Aaron Collins							
+			2492	Team10_Task3	High			[P]	Aaron Collins		07-Nov-17 12:40:00	07-Nov-17 19:20:00				
+			2493	Team10_Task4	High			[P]	Aaron Collins		10-Nov-17 16:30:00	10-Nov-17 12:38:00				
+5-jun-Team3			2494	Team3_Task1	High			[P] - A	Aaron Collins		07-Nov-17 16:30:00	07-Nov-17 19:20:00				
+			2494	Team3_Task1	High			P - [A]	Christian Richardson		03-Nov-17 12:40:00	03-Nov-17 19:20:00				
+			2495	Team3_Task2	High			[P]	Aaron Collins		01-Nov-17 16:30:00	01-Nov-17 12:38:00				
+5-jun-Team4			2498	Team4_Task1	High			[P] - R - A	Aaron Collins		01-Nov-17 17:00:00	01-Nov-17 12:30:00				
+			2498	Team4_Task1	High			P - [R] - A	Christian Richardson		08-Nov-17 12:40:00	08-Nov-17 12:38:00				
+			2498	Team4_Task1	High			P - R - [A]	Betty Wallace							
+			2499	Team4_Task2	High			[P]	Aaron Collins		10-Nov-17 12:40:00	10-Nov-17 12:38:00				
+Accounts Payable			1734	AP Reconciliation - Bureau Americas/Bureau Corporate	High			[P] - R - A	Grace Gardner	07-Jan-18 23:49:22	01-Nov-17 11:00:00	22-Nov-17 23:59:00				
+			1734	AP Reconciliation - Bureau Americas/Bureau Corporate	High			P - [R] - A	Charles Wilson	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1734	AP Reconciliation - Bureau Americas/Bureau Corporate	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1735	AP Reconciliation - Group Corporate	Low			[P] - R - A	Karen Alexander	07-Jan-18 23:49:22	01-Nov-17 11:00:00	22-Nov-17 23:59:00				
+			1735	AP Reconciliation - Group Corporate	Low			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1735	AP Reconciliation - Group Corporate	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1736	Close Current Period AP - Bureau Americas/Bureau Corporate/Group Corporate	Low			[P] - R - A	Grace Gardner	07-Jan-18 23:49:22	01-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1736	Close Current Period AP - Bureau Americas/Bureau Corporate/Group Corporate	Low			P - [R] - A	Charles Wilson	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1736	Close Current Period AP - Bureau Americas/Bureau Corporate/Group Corporate	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1737	Close Current Period AR - Bureau Americas/Bureau Corporate/Group Corporate	Medium			[P] - R - A	Karen Alexander	07-Jan-18 23:49:22	01-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1737	Close Current Period AR - Bureau Americas/Bureau Corporate/Group Corporate	Medium			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1737	Close Current Period AR - Bureau Americas/Bureau Corporate/Group Corporate	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:22	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+Accounts Receivable			1744	AR Reconciliation - Bureau Americas/Bureau Corporate	Medium			[P] - R - A	Jessica Graham	07-Jan-18 23:49:30	01-Nov-17 11:00:00	22-Nov-17 23:59:00				
+			1744	AR Reconciliation - Bureau Americas/Bureau Corporate	Medium			P - [R] - A	Charles Wilson	07-Jan-18 23:49:30	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1744	AR Reconciliation - Bureau Americas/Bureau Corporate	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:30	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1745	AR Reconciliation - Group Corporate	High			[P] - R - A	Janice Weaver	07-Jan-18 23:49:30	01-Nov-17 11:00:00	22-Nov-17 23:59:00				
+			1745	AR Reconciliation - Group Corporate	High			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:30	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1745	AR Reconciliation - Group Corporate	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:30	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+GL - Account Reconciliation			1746	Bank Reconciliations - Bureau Americas/Bureau Corporate	High			[P] - R - A	Jessica Graham	07-Jan-18 23:49:34	02-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1746	Bank Reconciliations - Bureau Americas/Bureau Corporate	High			P - [R] - A	Charles Wilson	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1746	Bank Reconciliations - Bureau Americas/Bureau Corporate	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1747	Bank Reconciliations - Chile and Brazil	High			[P] - R - A	Grace Gardner	07-Jan-18 23:49:34	02-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1747	Bank Reconciliations - Chile and Brazil	High			P - [R] - A	Charles Wilson	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1747	Bank Reconciliations - Chile and Brazil	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1748	Bank Reconciliations - Group US	Low			[P] - R - A	Janice Weaver	07-Jan-18 23:49:34	02-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1748	Bank Reconciliations - Group US	Low			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1748	Bank Reconciliations - Group US	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1749	PA Reconciliation - Bureau Americas	Low			[P] - R - A	Karen Alexander	07-Jan-18 23:49:34	03-Nov-17 16:00:00	22-Nov-17 23:59:00				
+			1749	PA Reconciliation - Bureau Americas	Low			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1749	PA Reconciliation - Bureau Americas	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1750	Unposted Journal Report - Bureau Americas	High			[P] - R - A	Grace Gardner	07-Jan-18 23:49:34	09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1750	Unposted Journal Report - Bureau Americas	High			P - [R] - A	Charles Wilson	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1750	Unposted Journal Report - Bureau Americas	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1751	Verify Report - Bureau Americas	Low			[P] - R - A	Karen Alexander	07-Jan-18 23:49:34	09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1751	Verify Report - Bureau Americas	Low			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1751	Verify Report - Bureau Americas	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:34	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+GL - Budgeting & Forecasting			1767	Cash Actual/Forecast Due - Bureau Americas	Medium			[P] - R - A	Jessica Graham	07-Jan-18 23:49:43	15-Nov-17 14:00:00	22-Nov-17 23:59:00				
+			1767	Cash Actual/Forecast Due - Bureau Americas	Medium			P - [R] - A	Charles Wilson	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1767	Cash Actual/Forecast Due - Bureau Americas	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1768	Cash Actual/Forecast Due - Group Brazil/Uruguay	Low			[P] - R - A	Karen Alexander	07-Jan-18 23:49:43	15-Nov-17 14:00:00	22-Nov-17 23:59:00				
+			1768	Cash Actual/Forecast Due - Group Brazil/Uruguay	Low			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1768	Cash Actual/Forecast Due - Group Brazil/Uruguay	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1769	Cash Actual/Forecast Due - Group Chile	Medium			[P] - R - A	Jessica Graham	07-Jan-18 23:49:43	15-Nov-17 14:00:00	22-Nov-17 23:59:00				
+			1769	Cash Actual/Forecast Due - Group Chile	Medium			P - [R] - A	Charles Wilson	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1769	Cash Actual/Forecast Due - Group Chile	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1770	Cash Actual/Forecast Due - Group Mexico	High			[P] - R - A	Janice Weaver	07-Jan-18 23:49:43	15-Nov-17 14:00:00	22-Nov-17 23:59:00				
+			1770	Cash Actual/Forecast Due - Group Mexico	High			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1770	Cash Actual/Forecast Due - Group Mexico	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1771	Cash Actual/Forecast Due - Group PCV	Low			[P] - R - A	Grace Gardner	07-Jan-18 23:49:43	15-Nov-17 14:00:00	22-Nov-17 23:59:00				
+			1771	Cash Actual/Forecast Due - Group PCV	Low			P - [R] - A	Charles Wilson	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1771	Cash Actual/Forecast Due - Group PCV	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1772	Flash Report Due (Final) - Bureau Americas	Low			[P] - R - A	Jessica Graham	07-Jan-18 23:49:43	03-Nov-17 10:00:00	22-Nov-17 23:59:00				
+			1772	Flash Report Due (Final) - Bureau Americas	Low			P - [R] - A	Charles Wilson	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1772	Flash Report Due (Final) - Bureau Americas	Low			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1773	Flash Report Due (Final) - Nautical Systems	Medium			[P] - R - A	Karen Alexander	07-Jan-18 23:49:43	03-Nov-17 10:00:00	22-Nov-17 23:59:00				
+			1773	Flash Report Due (Final) - Nautical Systems	Medium			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1773	Flash Report Due (Final) - Nautical Systems	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1774	Intra Revenue and Expense - Bureau Americas	Medium			[P] - R - A	Janice Weaver	07-Jan-18 23:49:43	03-Nov-17 16:00:00	22-Nov-17 23:59:00				
+			1774	Intra Revenue and Expense - Bureau Americas	Medium			P - [R] - A	Gregory Campbell	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1774	Intra Revenue and Expense - Bureau Americas	Medium			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1775	Ledger Revaluation - Bureau Americas	High			[P] - R - A	Grace Gardner	07-Jan-18 23:49:43	03-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1775	Ledger Revaluation - Bureau Americas	High			P - [R] - A	Charles Wilson	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1775	Ledger Revaluation - Bureau Americas	High			P - R - [A]	Doris Moreno	07-Jan-18 23:49:43	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+GL - Consolidation			1776	Close Current Period GL - Bureau Americas/Bureau Corporate/Group Corporate	Medium			[P] - R - A	Grace Gardner		03-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1776	Close Current Period GL - Bureau Americas/Bureau Corporate/Group Corporate	Medium			P - [R] - A	Charles Wilson		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1776	Close Current Period GL - Bureau Americas/Bureau Corporate/Group Corporate	Medium			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1777	Close Current Period Projects - Bureau Americas	High			[P] - R - A	Karen Alexander		03-Nov-17 15:30:00	22-Nov-17 23:59:00				
+			1777	Close Current Period Projects - Bureau Americas	High			P - [R] - A	Gregory Campbell		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1777	Close Current Period Projects - Bureau Americas	High			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1778	Cons DB Transfer - Bureau Americas	Low			[P] - R - A	Grace Gardner		09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1778	Cons DB Transfer - Bureau Americas	Low			P - [R] - A	Charles Wilson		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1778	Cons DB Transfer - Bureau Americas	Low			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1779	HFM Check Sheet - Bureau Americas	Medium			[P] - R - A	Karen Alexander		09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1779	HFM Check Sheet - Bureau Americas	Medium			P - [R] - A	Gregory Campbell		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1779	HFM Check Sheet - Bureau Americas	Medium			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1780	HFM Local Currency Load - Bureau Americas	High			[P] - R - A	Janice Weaver		21-Nov-17 17:00:00	22-Nov-17 23:59:00				
+			1780	HFM Local Currency Load - Bureau Americas	High			P - [R] - A	Gregory Campbell		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1780	HFM Local Currency Load - Bureau Americas	High			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1781	HFM USD Load - Bureau Americas	High			[P] - R - A	Jessica Graham		09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1781	HFM USD Load - Bureau Americas	High			P - [R] - A	Charles Wilson		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1781	HFM USD Load - Bureau Americas	High			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1782	Six Pack Due - Bureau Americas	Low			[P] - R - A	Janice Weaver		09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1782	Six Pack Due - Bureau Americas	Low			P - [R] - A	Gregory Campbell		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1782	Six Pack Due - Bureau Americas	Low			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1783	Six Pack Due - Bureau NS	High			[P] - R - A	Jessica Graham		09-Nov-17 08:00:00	22-Nov-17 23:59:00				
+			1783	Six Pack Due - Bureau NS	High			P - [R] - A	Charles Wilson		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1783	Six Pack Due - Bureau NS	High			P - R - [A]	Doris Moreno		22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+GL - Intercompany			1794	Revenue Clearing Review - Bureau Americas	Medium			[P] - R - A	Jessica Graham	06-Feb-18 16:07:05	03-Nov-17 16:00:00	22-Nov-17 23:59:00				
+			1794	Revenue Clearing Review - Bureau Americas	Medium			P - [R] - A	Charles Wilson	06-Feb-18 16:07:05	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1794	Revenue Clearing Review - Bureau Americas	Medium			P - R - [A]	Doris Moreno	06-Feb-18 16:07:05	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1795	Rounding Transfer Review - Bureau Americas	High			[P] - R - A	Janice Weaver	06-Feb-18 16:07:05	03-Nov-17 16:00:00	22-Nov-17 23:59:00				
+			1795	Rounding Transfer Review - Bureau Americas	High			P - [R] - A	Gregory Campbell	06-Feb-18 16:07:05	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+			1795	Rounding Transfer Review - Bureau Americas	High			P - R - [A]	Doris Moreno	06-Feb-18 16:07:05	22-Nov-17 23:59:00	22-Nov-17 23:59:00				
+																
