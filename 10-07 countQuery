@@ -1,0 +1,27 @@
+        public class StatudDetail
+        {
+            public int pendingCount { get; set; }
+            //value is used for calculate task number
+            public int completedCount { get; set; }
+            public string team { get; set; }
+
+
+        }
+        
+        
+        //sample query
+        var result = (from WorkbasketTask in context.WorkbasketTasks
+                      group WorkbasketTask by new
+                      {
+                          WorkbasketTask.Team,
+                      } into gcs
+                      select new StatudDetail
+                      {
+                          team = gcs.Key.Team.TeamName,
+                          pendingCount = gcs.Sum(x => x.StatusId == 1 ? 1 : 0),
+                          //here consider StatusId==1 for pending 
+                          completedCount = gcs.Sum(x => x.StatusId == 2 ? 1 : 0),
+
+                          //here consider StatusId==2 for competed 
+
+                      }).ToList<StatudDetail>();
