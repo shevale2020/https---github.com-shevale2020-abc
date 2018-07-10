@@ -1,0 +1,92 @@
+--Rejected Task All Data Query
+select  team.TeamName,
+        reject.WorkbasketTaskId,
+        tsk.TaskName,
+        wfl.LevelText,
+        prty.PriorityName,
+        preparer.UserName,
+        reviewer.UserName,
+        reject.RejectedOn,
+        reason.ReasonCode,
+        reject.Comments
+		from  RejectedTask reject
+                          inner join  ReasonsLookUp reason on reject.ReasonId = reason.Id
+                          inner join  WorkbasketTask tsk on reject.WorkbasketTaskId = tsk.Id
+                          inner join  Priorities prty on tsk.PriorityId = prty.Id
+                          inner join  Workflows wf on tsk.WorkflowId = wf.Id
+                          inner join  WorkflowLevels wfl on  wfl.[WorkflowId] = wf.Id and wfl.[Level] = reject.[Level] 
+                          inner join  Team team on tsk.TeamId = team.Id
+                          inner join  [User] preparer on reject.PreparerId = preparer.Id
+                          inner join  [User] reviewer on reject.ReviewerId = reviewer.Id
+                         -- where tsk.PeriodId = 110 --and lstTeams.Contains(tsk.TeamId) && lstReportees.Contains(preparer.Id)
+						 order by tsk.Id
+              
+--Hold Task all Data Query
+select team.TeamName,
+       hold.WorkbasketTaskId,
+       tsk.TaskName,
+       wfl.LevelText,
+       prty.PriorityName,
+       usr.UserName,
+       reason.ReasonCode,
+       hold.Comments,
+       hold.CreatedOn
+	   from  OnHoldTask hold
+                         inner join  ReasonsLookUp reason on hold.HoldReasonId = reason.Id
+                         inner join  WorkbasketTask tsk on hold.WorkbasketTaskId = tsk.Id
+                         inner join  Priorities prty on tsk.PriorityId = prty.Id
+                         inner join  Workflows wf on tsk.WorkflowId = wf.Id
+                         inner join  WorkflowLevels wfl on  wfl.[WorkflowId] = wf.Id and wfl.[Level] = hold.[Level] 
+                         inner join  Team team on tsk.TeamId = team.Id
+                         inner join  [User] usr on hold.UserId = usr.Id
+                          -- where tsk.PeriodId = 110
+
+
+--Duedate Task all Data Query
+ select team.TeamName,
+        tsk.Id,
+        tsusr.Id,
+        tsk.TaskName,
+        wfl.LevelText,
+        prty.PriorityName,
+        usr.UserName,
+        tsusr.ActualEndDate,
+        tsusr.EndDateInt,
+        tsusr.EndDateExt,
+        tsusr.RAGStatusInt,
+        tsusr.RAGStatusExt
+		from  WorkbasketTask tsk
+                          join  Priorities prty on tsk.PriorityId = prty.Id
+                          join  WorkbasketTaskUsers tsusr on tsk.Id = tsusr.WorkbasketTaskId
+                          join  Workflows wf on tsk.WorkflowId = wf.Id 
+                          inner join  WorkflowLevels wfl on  wfl.[WorkflowId] = wf.Id and wfl.[Level] = tsusr.WFLevel
+                          join  Team team on tsk.TeamId = team.Id
+                          join  [User] usr on tsusr.UserId = usr.Id
+                         -- where tsk.PeriodId = 110
+						  order by tsk.Id,tsusr.Id
+
+
+--Status Task all Data Query
+Select  team.TeamName,
+        tsk.TaskName,
+        tsk.Id,
+        tsk.TaskId,
+        preparer.UserName,
+        prty.PriorityName,
+        wfl.LevelText,
+        wfa.[Status],
+        tsk.CreatedOn,
+        tsk.TimeZone
+		from  WorkbasketTask tsk
+                          join  Priorities prty on tsk.PriorityId = prty.Id
+                          join  WorkflowActions wfa  on tsk.StatusId = wfa.Id
+                          join  WorkflowLevels wfl on wfl.WorkflowId=wfa.WorkflowId and wfl.[Level] = wfa.WorkflowLevel
+                          join  WorkbasketTaskUsers wbusr on tsk.Id = wbusr.WorkbasketTaskId
+                          join  Team team on tsk.TeamId = team.Id
+                          join  [User] preparer on wbusr.UserId = preparer.Id
+                         -- where tsk.PeriodId = 110
+
+-- Exceptional Task
+
+
+	
