@@ -1,0 +1,55 @@
+Please open the link
+
+https://github.com/shevale2020/https---github.com-shevale2020-abc/blob/2c85d590a38b9028d801046c9a5ac4ddf87b731f/Untitled.png
+
+
+
+
+
+
+
+
+
+
+
+
+
+///Data of above image 
+
+Select 
+LocationName(city)
+
+(  Inner query for count of  Past Activity 
+
+select count(1) WorkbasketTask  where Target date  < @TargetDate(08-May-18)
+and LocationId=wt.locationID	
+ ) as  Past Activities , 
+
+(  Inner query for count of  Past Activity 
+
+select count(1) WorkbasketTask  where Target date <= @TargetDate(08-May-18)
+and LocationId=wt.locationID	
+ ) as  
+Closed(With in TAT)
+, 
+
+(  Inner query for count of  Past Activity 
+
+select count(1) WorkbasketTask  where Target date >  @TargetDate(08-May-18)
+and LocationId=wt.locationID	
+ ) as  
+Closed(TAT Missed)
+, 
+...........(
+....
+
+
+From  
+WorkbasketTask  wt 
+
+inner join location wt  on ....
+
+Group by 
+
+LocationName(city)
+
