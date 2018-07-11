@@ -1,0 +1,19 @@
+Select LocationId,
+COUNT (  tsk.Id) 
+,  SUM ( CASE WHEN  hold.Id IS NOT NULL THEN 1 ELSE 0 END  )ONhOLDcOUNT
+
+,  SUM ( CASE WHEN  reject.Id IS NOT NULL THEN 1 ELSE 0 END  )rejectcOUNT
+
+
+		from  WorkbasketTask tsk
+                       inner join  Priorities prty on tsk.PriorityId = prty.Id
+                       inner join  WorkflowActions wfa  on tsk.StatusId = wfa.Id
+                      --   inner join  WorkbasketTaskUsers wbusr on tsk.Id = wbusr.WorkbasketTaskId
+                         inner   join  Team team on tsk.TeamId = team.Id
+                      --   inner join  [User] preparer on wbusr.UserId = preparer.Id
+                         LEFT join OnHoldTask hold on hold.WorkbasketTaskId = tsk.Id
+                      --  LEFT join  ReasonsLookUp reason on tsk.id = reason.WorkbasketTaskId
+                          -- for RejectedTask
+						LEFT JOIN  RejectedTask reject on  reject.WorkbasketTaskId = tsk.Id
+                           group by LocationId
+                         -- where tsk.PeriodId = 110
