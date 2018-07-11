@@ -1,0 +1,72 @@
+DECLARE @targetDate DATE = '08-10-18'
+
+SELECT LocationId
+	,
+	--past activity (EndDateInt < @targetDate )
+	SUM(CASE WHEN EndDateInt < @targetDate
+				AND ActualEndDate <= EndDateInt THEN 1 ELSE 0 END) AS 'Closed(With in TAT)'
+	,SUM(CASE WHEN EndDateInt < @targetDate
+				AND ActualEndDate > EndDateInt THEN 1 ELSE 0 END) AS 'Closed(TAT Missed)'
+	,SUM(CASE WHEN EndDateInt < @targetDate
+				AND ActualEndDate > EndDateInt
+				AND (STATUS = 'Inputs Awaited'
+					OR STATUS = 'System Issue'
+					OR STATUS = 'Queried to Sivantos') THEN 1 ELSE 0 END) AS 'Open(On Hold)'
+	,SUM(CASE WHEN EndDateInt < @targetDate
+				AND ActualEndDate > EndDateInt
+				AND (STATUS = 'WIP'
+					OR STATUS = 'Sent to Review'
+					OR STATUS = 'Approved'
+					OR STATUS = 'Rejected') THEN 1 ELSE 0 END) AS 'Open (WIP)'
+	,SUM(CASE WHEN EndDateInt < @targetDate
+				AND (STATUS = 'Pending')
+				AND IsAction = 0 THEN 1 ELSE 0 END) AS 'Open (Un-Actioned)'
+	,
+	--current Activity (EndDateInt =@targetDate)
+	SUM(CASE WHEN EndDateInt = @targetDate
+				AND ActualEndDate = EndDateInt THEN 1 ELSE 0 END) AS 'Closed(With in TAT)'
+	,SUM(CASE WHEN EndDateInt = @targetDate
+				AND STATUS = 'Hold' THEN 1 ELSE 0 END) AS 'Open(On Hold)'
+	,SUM(CASE WHEN EndDateInt = @targetDate
+				AND (STATUS = 'WIP'
+					OR STATUS = 'Sent to Review'
+					OR STATUS = 'Approved'
+					OR STATUS = 'Rejected') THEN 1 ELSE 0 END) AS 'Open (WIP)'
+	,SUM(CASE WHEN EndDateInt = @targetDate
+				AND (STATUS = 'Pending')
+				AND IsAction = 0
+				AND EndDateInt = @targetDate THEN 1 ELSE 0 END) AS 'Open (Un-Actioned)'
+	,
+	--Future Activities	(EndDateInt >@targetDate)
+	SUM(CASE WHEN EndDateInt > @targetDate
+				AND ActualEndDate < EndDateInt THEN 1 ELSE 0 END) AS 'Closed(Before TAT)'
+	,SUM(CASE WHEN EndDateInt > @targetDate
+				AND STATUS = 'Hold' THEN 1 ELSE 0 END) AS 'Open(On Hold)'
+	,SUM(CASE WHEN EndDateInt > @targetDate
+				AND (STATUS = 'WIP'
+					OR STATUS = 'Sent to Review'
+					OR STATUS = 'Approved'
+					OR STATUS = 'Rejected') THEN 1 ELSE 0 END) AS 'Open (WIP)'
+	,SUM(CASE WHEN EndDateInt > @targetDate
+				AND (STATUS = 'Pending')
+				AND IsAction = 0
+				AND EndDateInt = @targetDate THEN 1 ELSE 0 END) AS 'Open (Un-Actioned)'
+FROM (
+	SELECT p.locationId
+		,wfa.[Status]
+		,MAX(wbusr.EndDateInt) AS EndDateInt
+		,MAX(wbusr.ActualEndDate) AS ActualEndDate
+		,wfa.IsAction
+	--,count(wbt.ID) 
+	FROM WorkbasketTask wbt
+	INNER JOIN Period p ON wbt.PeriodId = p.Id
+	INNER JOIN WorkbasketTaskUsers wbusr ON wbt.Id = wbusr.WorkbasketTaskId
+	INNER JOIN WorkflowActions wfa ON wbt.StatusId = wfa.Id
+	INNER JOIN WorkflowLevels wfl ON wfl.WorkflowId = wbt.WorkflowId
+		AND wfl.[Level] = wfa.WorkflowLevel
+	--where CONVERT(VARCHAR(20), wbusr.EndDateInt, 112) <'20180523'
+	GROUP BY p.locationId
+		,wfa.[Status]
+		,wfa.IsAction
+	) k
+GROUP BY LocationId
