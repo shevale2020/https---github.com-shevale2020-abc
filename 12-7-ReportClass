@@ -1,0 +1,1053 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web.Mvc;
+using eCloseDataAccessLayer.Models;
+using eCloseDataAccessLayer.Entities;
+using eCloseDataAccessLayer.Utility;
+using EntityFramework.Extensions;
+using System.Data;
+using ECloseBL.Entities;
+
+namespace eCloseDataAccessLayer.HelperClasses
+{
+    public class ReportClass
+    {
+        ECloseContext context = new ECloseContext();
+        private string pendingStatus = Enums.WorkbasketAction.Pending.ToString();
+        private string closeStatus = Enums.WorkbasketAction.Close.ToString();
+        private string allStatus = Enums.WorkbasketAction.All.ToString();
+        private string approveStatus = Enums.WorkbasketAction.Approve.ToString();
+        private string completedStatus = Enums.WorkbasketAction.Completed.ToString();
+        private string DiscardedStatus = Enums.WorkbasketAction.Discarded.ToString();
+        private string holdStatus = Enums.WorkbasketAction.Hold.ToString();
+        private string reviewer = Enums.Role.Reviewer.ToString();
+        private string preparer = Enums.Role.Preparer.ToString();
+        private string supervisor = Enums.Role.Supervisor.ToString();
+        public List<TATReportData> GetTATData(int periodId, int tenantId, int locationId, int teamId, int userId, string role)
+        {
+
+            List<int> lstTeams = new List<int>();//To hold Location teams
+            List<int> lstReportees = new List<int>();//To hold reportees
+
+            if (role.Equals(Enums.Role.Supervisor.ToString()))//Get the Supervisors Reportees
+            {
+                lstReportees = context.Users.Where(uc => uc.TenantId == tenantId && uc.SupervisorId == userId).Select(u => u.Id).ToList();
+            }
+
+            if (teamId == 0)
+
+                lstTeams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+            else
+
+                lstTeams.Add(teamId);
+
+
+            //Prepare Report Data Structure 
+            List<TATReportData> result = new List<TATReportData>();
+
+
+
+
+            if (role.Equals(Enums.Role.Supervisor.ToString()))
+            {
+
+                result = (from tsk in context.WorkbasketTasks
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join tsusr in context.WorkbasketTaskUsers on tsk.Id equals tsusr.WorkbasketTaskId
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = tsusr.WFLevel } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join usr in context.Users on tsusr.UserId equals usr.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId) && lstReportees.Contains(usr.Id)
+                          select new
+                          {
+                              Team = team.TeamName,
+                              TaskId = tsk.Id,
+                              DueId = tsusr.Id,
+                              Task = tsk.TaskName,
+                              Level = wfl.LevelText,
+                              Priority = prty.PriorityName,
+                              User = usr.UserName,
+                              ActionDate = tsusr.ActualEndDate,
+                              InternalTATDate = tsusr.EndDateInt,
+                              ExternalTATDate = tsusr.EndDateExt,
+
+                              RAGInternal = tsusr.RAGStatusInt,
+                              RAGExternal = tsusr.RAGStatusExt
+
+
+                          }).OrderBy(a => a.TaskId).ThenBy(b => b.DueId).ToList()
+                .Select(x => new TATReportData()
+                {
+                    Team = x.Team,
+                    TaskId = x.TaskId,
+                    Task = x.Task,
+                    Priority = x.Priority,
+                    WorkflowLevel = x.Level,
+                    User = x.User,
+                    ActionDate = x.ActionDate,
+                    InternalTATDate = x.InternalTATDate,
+                    ExternalTATDate = x.ExternalTATDate,
+                    RAGInternal = x.RAGInternal,
+                    RAGExternal = x.RAGExternal
+
+
+                }
+                 ).ToList();
+
+                return result;
+            }
+
+            else//Get Team Specific Data
+            {
+
+
+                result = (from tsk in context.WorkbasketTasks
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join tsusr in context.WorkbasketTaskUsers on tsk.Id equals tsusr.WorkbasketTaskId
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = tsusr.WFLevel } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join usr in context.Users on tsusr.UserId equals usr.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId)
+                          select new
+                          {
+                              Team = team.TeamName,
+                              TaskId = tsk.Id,
+                              DueId = tsusr.Id,
+                              Task = tsk.TaskName,
+                              Priority = prty.PriorityName,
+                              Level = wfl.LevelText,
+                              User = usr.UserName,
+                              ActionDate = tsusr.ActualEndDate,
+                              InternalTATDate = tsusr.EndDateInt,
+                              ExternalTATDate = tsusr.EndDateExt,
+                              RAGInternal = tsusr.RAGStatusInt,
+                              RAGExternal = tsusr.RAGStatusExt
+
+
+                          }
+                                                                 ).OrderBy(a => a.TaskId).ThenBy(b => b.DueId).ToList()
+                .Select(x => new TATReportData()
+                {
+                    Team = x.Team,
+                    TaskId = x.TaskId,
+                    Task = x.Task,
+                    Priority = x.Priority,
+                    WorkflowLevel = x.Level,
+                    User = x.User,
+                    ActionDate = x.ActionDate,
+                    InternalTATDate = x.InternalTATDate,
+                    ExternalTATDate = x.ExternalTATDate,
+                    RAGInternal = x.RAGInternal,
+                    RAGExternal = x.RAGExternal
+
+
+                }
+                 ).ToList();
+
+                return result;
+            }
+        }
+
+        public List<HoldReportData> GetHoldData(int periodId, int tenantId, int locationId, int teamId, int userId, string role)
+        {
+
+            List<int> lstTeams = new List<int>();//To hold Location teams
+            List<int> lstReportees = new List<int>();//To hold reportess
+
+            if (role.Equals(Enums.Role.Supervisor.ToString()))//Get the Supervisors Reportees
+            {
+                lstReportees = context.Users.Where(uc => uc.TenantId == tenantId && uc.SupervisorId == userId).Select(u => u.Id).ToList();
+            }
+
+            if (teamId == 0)
+
+                lstTeams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+            else
+
+                lstTeams.Add(teamId);
+
+
+            //Prepare Report Data Source 
+            List<HoldReportData> result = new List<HoldReportData>();
+
+            //Get Teams for a Location if TeamId is not supplied
+            if (role.Equals(Enums.Role.Supervisor.ToString()))
+            {
+
+                result = (from hold in context.OnHoldTasks
+                          join reason in context.ReasonsLookUps on hold.HoldReasonId equals reason.Id
+                          join tsk in context.WorkbasketTasks on hold.WorkbasketTaskId equals tsk.Id
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = hold.Level } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join usr in context.Users on hold.UserId equals usr.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId) && lstReportees.Contains(usr.Id)
+                          select new
+                          {
+
+                              Team = team.TeamName,
+                              TaskId = hold.WorkbasketTaskId,
+                              Task = tsk.TaskName,
+                              Level = wfl.LevelText,
+                              Priority = prty.PriorityName,
+                              User = usr.UserName,
+                              ReasonCode = reason.ReasonCode,
+                              Comments = hold.Comments,
+                              ActionDate = hold.CreatedOn
+
+                          }).ToList()
+                 .Select(x => new HoldReportData()
+                 {
+
+                     Team = x.Team,
+                     TaskId = x.TaskId,
+                     Task = x.Task,
+                     Priority = x.Priority,
+                     HoldAtLevel = x.Level,
+                     HoldBy = x.User,
+                     ReasonCode = x.ReasonCode,
+                     Comments = x.Comments,
+                     HoldOn = x.ActionDate
+
+                 }
+                  ).ToList();
+
+
+
+                return result;
+            }
+
+            else//Get All Users Data
+            {
+
+
+                result = (from hold in context.OnHoldTasks
+                          join reason in context.ReasonsLookUps on hold.HoldReasonId equals reason.Id
+                          join tsk in context.WorkbasketTasks on hold.WorkbasketTaskId equals tsk.Id
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = hold.Level } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join usr in context.Users on hold.UserId equals usr.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId)
+                          select new
+                          {
+
+                              Team = team.TeamName,
+                              TaskId = hold.WorkbasketTaskId,
+                              Task = tsk.TaskName,
+                              Level = wfl.LevelText,
+                              Priority = prty.PriorityName,
+                              User = usr.UserName,
+                              ReasonCode = reason.ReasonCode,
+                              Comments = hold.Comments,
+                              ActionDate = hold.CreatedOn
+
+                          }).ToList()
+                 .Select(x => new HoldReportData()
+                 {
+
+                     Team = x.Team,
+                     TaskId = x.TaskId,
+                     Task = x.Task,
+                     Priority = x.Priority,
+                     HoldAtLevel = x.Level,
+                     HoldBy = x.User,
+                     ReasonCode = x.ReasonCode,
+                     Comments = x.Comments,
+                     HoldOn = x.ActionDate
+
+                 }
+                  ).ToList();
+                return result;
+            }
+        }
+
+        public List<RejectReportData> GetRejectData(int periodId, int tenantId, int locationId, int teamId, int userId, string role)
+        {
+
+
+            List<int> lstTeams = new List<int>();//To hold Location teams
+            List<int> lstReportees = new List<int>();//To hold reportess
+
+            if (role.Equals(Enums.Role.Supervisor.ToString()))//Get the Supervisors Reportees
+            {
+                lstReportees = context.Users.Where(uc => uc.TenantId == tenantId && uc.SupervisorId == userId).Select(u => u.Id).ToList();
+            }
+
+            if (teamId == 0)
+
+                lstTeams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+            else
+
+                lstTeams.Add(teamId);
+
+
+            //Prepare Report Data Source 
+            List<RejectReportData> result = new List<RejectReportData>();
+
+            //Get Teams for a Location if TeamId is not supplied
+            if (role.Equals(Enums.Role.Supervisor.ToString()))
+            {
+
+                var teams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+
+                result =
+                result = (from reject in context.RejectedTasks
+                          join reason in context.ReasonsLookUps on reject.ReasonId equals reason.Id
+                          join tsk in context.WorkbasketTasks on reject.WorkbasketTaskId equals tsk.Id
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = reject.Level } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join preparer in context.Users on reject.PreparerId equals preparer.Id
+                          join reviewer in context.Users on reject.ReviewerId equals reviewer.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId) && lstReportees.Contains(preparer.Id)
+                          select new
+                          {
+
+                              Team = team.TeamName,
+                              TaskId = reject.WorkbasketTaskId,
+                              Task = tsk.TaskName,
+                              Level = wfl.LevelText,
+                              Priority = prty.PriorityName,
+                              Preparer = preparer.UserName,
+                              Reviewer = reviewer.UserName,
+                              RejectedOn = reject.RejectedOn,
+                              ReasonCode = reason.ReasonCode,
+                              Comments = reject.Comments
+
+
+                          }).OrderBy(a => a.TaskId).ToList()
+               .Select(x => new RejectReportData()
+               {
+
+                   Team = x.Team,
+                   TaskId = x.TaskId,
+                   Task = x.Task,
+                   Priority = x.Priority,
+                   RejectionLevel = x.Level,
+                   Preparer = x.Preparer,
+                   RejectedBy = x.Reviewer,
+                   RejectedOn = x.RejectedOn,
+                   ReasonCode = x.ReasonCode,
+                   Comments = x.Comments
+
+
+               }
+                ).ToList();
+
+
+
+                return result;
+            }
+
+            else//Get Team Specific Data
+            {
+
+
+                result = (from reject in context.RejectedTasks
+                          join reason in context.ReasonsLookUps on reject.ReasonId equals reason.Id
+                          join tsk in context.WorkbasketTasks on reject.WorkbasketTaskId equals tsk.Id
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wf in context.Workflows on tsk.WorkflowId equals wf.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wf.Id, x2 = reject.Level } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join preparer in context.Users on reject.PreparerId equals preparer.Id
+                          join reviewer in context.Users on reject.ReviewerId equals reviewer.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(tsk.TeamId)
+                          select new
+                          {
+
+                              Team = team.TeamName,
+                              TaskId = reject.WorkbasketTaskId,
+                              Task = tsk.TaskName,
+                              Level = wfl.LevelText,
+                              Priority = prty.PriorityName,
+                              Preparer = preparer.UserName,
+                              Reviewer = reviewer.UserName,
+                              RejectedOn = reject.RejectedOn,
+                              ReasonCode = reason.ReasonCode,
+                              Comments = reject.Comments
+
+
+                          }).OrderBy(a => a.TaskId).ToList()
+               .Select(x => new RejectReportData()
+               {
+
+                   Team = x.Team,
+                   TaskId = x.TaskId,
+                   Task = x.Task,
+                   Priority = x.Priority,
+                   RejectionLevel = x.Level,
+                   Preparer = x.Preparer,
+                   RejectedBy = x.Reviewer,
+                   RejectedOn = x.RejectedOn,
+                   ReasonCode = x.ReasonCode,
+                   Comments = x.Comments
+               }
+                ).ToList();
+
+                return result;
+            }
+        }
+
+        public List<ReportData_Status> GetTasksData(int periodId, int tenantId, int locationId, int teamId, int userId, string role)
+        {
+
+
+            List<int> lstTeams = new List<int>();//To hold Location teams
+            List<int> lstReportees = new List<int>();//To hold reportess
+
+            if (role.Equals(Enums.Role.Supervisor.ToString()))//Get the Supervisors Reportees
+            {
+                lstReportees = context.Users.Where(uc => uc.TenantId == tenantId && uc.SupervisorId == userId).Select(u => u.Id).ToList();
+            }
+
+            if (teamId == 0)
+
+                lstTeams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+            else
+
+                lstTeams.Add(teamId);
+
+
+            //Prepare Report Data Source 
+            List<ReportData_Status> result = new List<ReportData_Status>();
+
+            //Get Teams for a Location if TeamId is not supplied
+            if (role.Equals(Enums.Role.Supervisor.ToString()))
+            {
+
+                var teams = context.Teams.Where(t => t.LocationId == locationId).Select(t => t.Id).ToList();
+
+
+                result = (from tsk in context.WorkbasketTasks
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wfa in context.WorkflowActions on tsk.StatusId equals wfa.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wfa.WorkflowId, x2 = wfa.WorkflowLevel } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join wbusr in context.WorkbasketTaskUsers on tsk.Id equals wbusr.WorkbasketTaskId
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join preparer in context.Users on wbusr.UserId equals preparer.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(team.Id) && wbusr.WFLevel == 0 && lstReportees.Contains(preparer.Id)
+                          select new
+                          {
+                              Team = team.TeamName,
+                              Task = tsk.TaskName,
+                              Id = tsk.Id,
+                              TaskId = tsk.TaskId,
+                              Preparer = preparer.UserName,
+                              Priority = prty.PriorityName,
+                              Level = wfl.LevelText,
+                              Status = wfa.Status,
+                              CreatedOn = tsk.CreatedOn,
+                              TimeZone = tsk.TimeZone
+                          }).ToList()
+             .Select(x => new ReportData_Status()
+             {
+                 Team = x.Team,
+                 TaskId = x.Id,
+                 Task = x.Task,
+                 Priority = x.Priority,
+                 Preparer = x.Preparer,
+                 CurrentLevel = x.Level,
+                 Status = x.Status,
+                 IsAdhoc = x.TaskId == null ? "Yes" : "No",
+                 CreatedOn = TimeZoneInfo.ConvertTimeFromUtc(x.CreatedOn, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone))
+             }
+              ).ToList();
+
+            }
+
+            else//Get Team Specific Data
+            {
+
+                result = (from tsk in context.WorkbasketTasks
+                          join prty in context.Priorities on tsk.PriorityId equals prty.Id
+                          join wfa in context.WorkflowActions on tsk.StatusId equals wfa.Id
+                          join wfl in context.WorkflowLevels on new { x1 = wfa.WorkflowId, x2 = wfa.WorkflowLevel } equals new { x1 = wfl.WorkflowId, x2 = wfl.Level }
+                          join wbusr in context.WorkbasketTaskUsers on tsk.Id equals wbusr.WorkbasketTaskId
+                          join team in context.Teams on tsk.TeamId equals team.Id
+                          join preparer in context.Users on wbusr.UserId equals preparer.Id
+                          where tsk.PeriodId == periodId && lstTeams.Contains(team.Id) && wbusr.WFLevel == 0
+                          select new
+                          {
+
+                              Team = team.TeamName,
+                              Task = tsk.TaskName,
+                              Id = tsk.Id,
+                              TaskId = tsk.TaskId,
+                              Preparer = preparer.UserName,
+                              Priority = prty.PriorityName,
+                              Level = wfl.LevelText,
+                              Status = wfa.Status,
+                              CreatedOn = tsk.CreatedOn,
+                              TimeZone = tsk.TimeZone
+
+                          }).ToList()
+             .Select(x => new ReportData_Status()
+             {
+
+                 Team = x.Team,
+                 TaskId = x.Id,
+                 Task = x.Task,
+                 Priority = x.Priority,
+                 Preparer = x.Preparer,
+                 CurrentLevel = x.Level,
+                 Status = x.Status,
+                 IsAdhoc = x.TaskId == null ? "Yes" : "No",
+                 CreatedOn = TimeZoneInfo.ConvertTimeFromUtc(x.CreatedOn, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone))
+             }
+              ).ToList();
+            }
+            return result;
+        }
+        public List<Workitems> GetExceptionalTaskReport(int locationId, int tenantId, int teamId, string period, int userId, string role)
+        {
+            try
+            {
+                using (ECloseContext context = new ECloseContext())
+                {
+                    var isSupervisor = role.Equals(Enums.Role.Supervisor.ToString());
+                    //Prepare Report Data Source 
+                    List<Workitems> result = new List<Workitems>();
+                    result = (
+                    from et in context.ExceptionalTasks
+                    where et.WorkbasketTask.Period.PeriodText == period && et.TenantId == tenantId
+                    && ((teamId == 0) ? true : et.WorkbasketTask.TeamId == teamId)
+                    && ((isSupervisor) ? et.WorkbasketTask.WorkbasketTaskUsers.Where(a => a.WFLevel == 0).Select(a => a.User.SupervisorId).FirstOrDefault() == userId : true)
+                     && et.WorkbasketTask.Period.LocationId == locationId
+                    // && wfu.WFLevel==0
+                    select new Workitems
+                    {
+                        // TaskAtLevel = wf.WorkflowLevel,
+                        TeamName = et.WorkbasketTask.Team.TeamName,
+                        TaskName = et.WorkbasketTask.TaskName,
+                        Status = et.WorkbasketTask.WorkflowAction.Status,
+                        Priority = et.WorkbasketTask.Priority1.PriorityName,
+                        TaskAtLevelText = et.WorkbasketTask.Workflow.WorkflowLevels.Where(a => a.Level == et.WorkbasketTask.WorkflowAction.WorkflowLevel).Select(a => a.LevelText).FirstOrDefault(),
+                        User = et.WorkbasketTask.WorkbasketTaskUsers.Where(a => a.WFLevel == 0).Select(a => a.User.UserName).FirstOrDefault(),
+                        PeriodName = et.WorkbasketTask.Period.PeriodText,
+                        IsForcefullyClosed = "No",
+                        DiscardedBy = et.CreatedBy,
+                        DiscardedOn = et.CreatedOn,
+                        ReasonCode = et.ReasonsLookUp.ReasonCode,
+                        Comments = et.Comments
+                    }).Union(from w in context.WorkbasketTasks
+                             where w.Period.PeriodText == period && w.TenantId == tenantId && w.IsForcedClose == true
+                              && ((teamId == 0) ? true : w.TeamId == teamId)
+                    && ((isSupervisor) ? w.WorkbasketTaskUsers.Where(a => a.WFLevel == w.WorkflowAction.WorkflowLevel).Select(a => a.User.SupervisorId).FirstOrDefault() == userId : true)
+                               && w.Period.LocationId == locationId
+                             select new Workitems
+                             {
+                                 //TaskAtLevel = wf.WorkflowLevel,
+                                 Id = w.Id,
+                                 TeamName = w.Team.TeamName,
+                                 TaskName = w.TaskName,
+                                 Status = w.WorkflowAction.Status,
+                                 Priority = w.Priority1.PriorityName,
+                                 TaskAtLevelText = w.Workflow.WorkflowLevels.Where(a => a.Level == w.WorkflowAction.WorkflowLevel).Select(a => a.LevelText).FirstOrDefault(),
+                                 User = w.WorkbasketTaskUsers.Where(a => a.WFLevel == 0).Select(a => a.User.UserName).FirstOrDefault(),
+                                 PeriodName = w.Period.PeriodText,
+                                 IsForcefullyClosed = "yes",
+                                 DiscardedBy = "",
+                                 DiscardedOn = w.CreatedOn,
+                                 ReasonCode = "",
+                                 Comments = ""
+                             }).OrderBy(a => a.Id).ToList();
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public IEnumerable<TaskInfo> GetTaskTimelineChartReport(int LocationId, int PeriodId, int tenantId, int IndependentTask)
+        {
+            ECloseContext context = new ECloseContext();
+            IEnumerable<TaskInfo> taskList;
+            IEnumerable<TaskInfo> dependandantTaskList;
+            List<TaskInfo> combineList = new List<TaskInfo>();
+            List<TaskInfo> finalList = new List<TaskInfo>();
+
+            //Check the dependant and Independant task 
+            if (IndependentTask == 1)
+            {
+                taskList = (from WorkbasketTask in context.WorkbasketTasks
+                            join DependetWorkbasketTask in context.DependetWorkbasketTasks
+                            on WorkbasketTask.Id equals DependetWorkbasketTask.WorkbasketTaskId into DependetWorkInfo
+                            from DependetWorkbasketTask in DependetWorkInfo.DefaultIfEmpty()
+                            join Period in context.Periods
+                           on WorkbasketTask.PeriodId equals Period.Id
+                            join Team in context.Teams
+                            on WorkbasketTask.TeamId equals Team.Id
+                            join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                            on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
+                            where (WorkbasketTask.PeriodId == PeriodId) && (Period.LocationId == LocationId) && (Period.Id == PeriodId) && (WorkbasketTask.TenantId == tenantId) && (DependetWorkbasketTask.DependsOnWorkbasketTaskId == null)
+                                              && (WorkbasketTask.TaskId != null)
+                            group WorkbasketTaskUsers by new
+                            {
+                                //    WorkbasketTaskUsers.EndDateInt,
+                                WorkbasketTask.Id,
+                                DependetWorkbasketTask.DependsOnWorkbasketTaskId,
+                                WorkbasketTask.TaskName,
+                                Team.TeamName
+                            }
+                            into gcs
+                            let topp = gcs.Max(x => x.WFLevel)
+                            select new TaskInfo
+                            {
+                                //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                WorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                DependsOnWorkbasketTaskId = gcs.Key.DependsOnWorkbasketTaskId,
+                                WFLevel = topp,
+                                // EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                value = 0,
+                                extra = "",
+                                IsDependantTask = false
+                            }).ToList<TaskInfo>();
+            }
+            else if (IndependentTask == 0)
+            {
+                taskList = (from WorkbasketTask in context.WorkbasketTasks
+                            join DependetWorkbasketTask in context.DependetWorkbasketTasks
+                            on WorkbasketTask.Id equals DependetWorkbasketTask.WorkbasketTaskId into DependetWorkInfo
+                            from DependetWorkbasketTask in DependetWorkInfo.DefaultIfEmpty()
+                            join Period in context.Periods
+                            on WorkbasketTask.PeriodId equals Period.Id
+                            join Team in context.Teams
+                            on WorkbasketTask.TeamId equals Team.Id
+                            join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                            on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
+                            where (WorkbasketTask.PeriodId == PeriodId) && (Period.LocationId == LocationId) && (Period.Id == PeriodId) && (WorkbasketTask.TenantId == tenantId) && (DependetWorkbasketTask.DependsOnWorkbasketTaskId != null)
+                          && (WorkbasketTask.TaskId != null)
+                            group WorkbasketTaskUsers by new
+                            {
+                                //    WorkbasketTaskUsers.EndDateInt,
+                                WorkbasketTask.Id,
+                                DependetWorkbasketTask.DependsOnWorkbasketTaskId,
+                                WorkbasketTask.TaskName,
+                                Team.TeamName
+                            } into gcs
+                            let topp = gcs.Max(x => x.WFLevel)
+                            select new TaskInfo
+                            {
+                                //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                WorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                DependsOnWorkbasketTaskId = gcs.Key.DependsOnWorkbasketTaskId,
+                                WFLevel = topp,
+                                // EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                value = 0,
+                                extra = "",
+                                IsDependantTask = false
+                            }).ToList<TaskInfo>();
+            }
+            else
+            {
+                taskList = (from WorkbasketTask in context.WorkbasketTasks
+                            join DependetWorkbasketTask in context.DependetWorkbasketTasks
+                            on WorkbasketTask.Id equals DependetWorkbasketTask.WorkbasketTaskId into DependetWorkInfo
+                            from DependetWorkbasketTask in DependetWorkInfo.DefaultIfEmpty()
+                            join Period in context.Periods
+                            on WorkbasketTask.PeriodId equals Period.Id
+                            join Team in context.Teams
+                            on WorkbasketTask.TeamId equals Team.Id
+                            join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                            on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId
+                            where (Period.LocationId == LocationId) && (Period.Id == PeriodId) && (WorkbasketTask.TenantId == tenantId)
+                                              && (WorkbasketTask.TaskId != null)
+                            group WorkbasketTaskUsers by new
+                            {
+                                //    WorkbasketTaskUsers.EndDateInt,
+                                WorkbasketTask.Id,
+                                DependetWorkbasketTask.DependsOnWorkbasketTaskId,
+                                WorkbasketTask.TaskName,
+                                Team.TeamName
+                            } into gcs
+                            let topp = gcs.Max(x => x.WFLevel)
+                            select new TaskInfo
+                            {
+                                //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                WorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                DependsOnWorkbasketTaskId = gcs.Key.DependsOnWorkbasketTaskId,
+                                WFLevel = topp,
+                                // EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                value = 0,
+                                extra = "",
+                                IsDependantTask = false
+                            }).ToList<TaskInfo>();
+            }
+
+            IEnumerable<int?> WorkbasketTaskIdList = taskList.Select(t => t.WorkbasketTaskId);
+            IEnumerable<int?> DependsOnWorkbasketTaskIdList = taskList.Where(x => !WorkbasketTaskIdList.Contains(x.DependsOnWorkbasketTaskId)).Select(t => t.DependsOnWorkbasketTaskId);
+
+            dependandantTaskList = (from WorkbasketTask in context.WorkbasketTasks
+                                    join Period in context.Periods
+                                    on WorkbasketTask.PeriodId equals Period.Id into Periodinfo
+                                    join Team in context.Teams
+                                    on WorkbasketTask.TeamId equals Team.Id into Teaminfo
+                                    from Team in Teaminfo.DefaultIfEmpty()
+                                    join WorkbasketTaskUsers in context.WorkbasketTaskUsers
+                                    on WorkbasketTask.Id equals WorkbasketTaskUsers.WorkbasketTaskId into WorkbasketTaskUsersinfo
+                                    from WorkbasketTaskUsers in WorkbasketTaskUsersinfo.DefaultIfEmpty()
+                                    join record in DependsOnWorkbasketTaskIdList
+                                    on WorkbasketTask.Id equals record
+                                    group WorkbasketTaskUsers by new
+                                    {
+                                        // WorkbasketTaskUsers.EndDateInt,
+                                        WorkbasketTask.Id,
+                                        WorkbasketTask.TaskName,
+                                        Team.TeamName
+                                    } into gcs
+                                    let topp = gcs.Max(x => x.WFLevel)
+                                    select new TaskInfo
+                                    {
+                                        //TeamId = (gcs.Key.TeamId == null) ? 0 : gcs.Key.TeamId,
+                                        TeamName = (gcs.Key.TeamName == null) ? "" : gcs.Key.TeamName,
+                                        TaskName = (gcs.Key.TaskName == null) ? "" : gcs.Key.TaskName,
+                                        WorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                        DependsOnWorkbasketTaskId = (gcs.Key.Id == null) ? 0 : gcs.Key.Id,
+                                        //  EndDateInt = gcs.Max(x => (gcs.Key.EndDateInt == null) ? DateTime.Today : gcs.Key.EndDateInt),
+                                        WFLevel = topp,
+                                        value = 0,
+                                        extra = "",
+                                        IsDependantTask = true
+                                    }).ToList<TaskInfo>();
+
+            combineList.AddRange(taskList);
+            combineList.AddRange(dependandantTaskList);
+
+            //var userDetaqils = context.WorkbasketTaskUsers;
+            IEnumerable<int?> workBasketIdList = combineList.Select(x => x.WorkbasketTaskId).ToList();
+            IEnumerable<TaskInfo> workbasketTaskUserList = context.WorkbasketTaskUsers.
+            Where(x => workBasketIdList.Contains(x.WorkbasketTaskId)).Select(x => new TaskInfo
+            {
+                WFLevel = x.WFLevel,
+                EndDateInt = x.EndDateInt,
+                WorkbasketTaskId = x.WorkbasketTaskId
+            }
+            ).ToList<TaskInfo>();
+
+            try
+            {
+                foreach (var task in combineList)
+                {
+                    var _taskList = workbasketTaskUserList.Where(x => x.WorkbasketTaskId == task.WorkbasketTaskId && x.WFLevel == task.WFLevel && x.EndDateInt != null);
+
+                    DateTime? taskDate = new DateTime();
+                    int _maxWLevel = 0;
+                    int _maxWorkDay = 0;
+                    if (_taskList.Count() == 0)
+                    {
+                        var listForFindMaxLevel = (from u in workbasketTaskUserList
+                                                   where
+                                                        (u.WorkbasketTaskId == task.WorkbasketTaskId
+                                                         && u.EndDateInt != null)
+                                                   select new
+                                                   { WFLevel = u.WFLevel == null ? 0 : u.WFLevel }).ToList();
+                        //  var _maxWLevel = context.WorkbasketTaskUsers.Where(x => x.WorkbasketTaskId == task.WorkbasketTaskId && task.EndDateInt != null).Max(x => x.WFLevel);
+
+                        if (listForFindMaxLevel.Count > 0)
+                            _maxWLevel = listForFindMaxLevel.Max(x => x.WFLevel);
+
+                        if (_maxWLevel != 0)
+                        {
+                            taskDate = workbasketTaskUserList.Where(x => x.WorkbasketTaskId == task.WorkbasketTaskId && x.WFLevel == _maxWLevel).First().EndDateInt;
+
+                        }
+                        else
+                        {
+                            var listWorkDay = context.PeriodDays.Where(x => x.Id == PeriodId).Select(x => x.WorkDay).ToList();
+
+                            _maxWorkDay = listWorkDay.Count() > 0 ? listWorkDay.Max(x => x.Value) : 0;
+
+                            taskDate = context.PeriodDays.Where(x => x.Id == PeriodId && x.WorkDay == _maxWorkDay).FirstOrDefault().CalenderDate;
+                        }
+                    }
+                    task.EndDateInt = _taskList.Count() == 0 ? taskDate : _taskList.FirstOrDefault().EndDateInt;
+                    finalList.Add(task);
+                }
+            }
+            catch (Exception ex)
+            {
+            }
+            return (finalList);
+        }
+
+
+        public List<TaskInfo> GetTaskMinMaxDate(int PeriodId)
+        {
+            List<TaskInfo> dateInfo = new List<TaskInfo>();
+            dateInfo = (from PeriodDay in context.PeriodDays
+                        join Period in context.Periods
+                        on PeriodDay.PeriodId equals Period.Id
+                        where PeriodDay.PeriodId == PeriodId
+                        group PeriodDay by new
+                        {
+                            PeriodDay.PeriodId,
+                        } into gcs
+                        select new TaskInfo
+                        {
+                            StartDate = gcs.Min(x => x.CalenderDate),
+                            EndDate = gcs.Max(x => x.CalenderDate)
+                        }).ToList<TaskInfo>();
+            return dateInfo;
+        }
+
+        [HttpGet]
+    
+        public List<Workitems> GetWorkitems(int tenantId,int workbasketTaskId, string taskName,int userId)//,int jtStartIndex, int jtPageSize, string jtSorting, string userRole, int priorityId )
+
+        {
+            
+
+
+            try
+            {
+                var workitemList = new List<Workitems>();
+               // var totalRecords = TotalCountOfWorkitemsForPending(tenantId, taskName, userId, userRole, priorityId);
+                IQueryable<Workitems> workbasketQuery;
+                using (ECloseContext context = new ECloseContext())
+                {
+                   
+                    workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false  && a.WorkflowAction.Status != DiscardedStatus// && a.Period.PeriodText == periodId
+                                                               && a.WorkbasketTaskUsers.Where(b =>  b.IsDeleted == false).Any()
+                                                               && a.Id == workbasketTaskId
+                                                               //&& (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                               && (a.WorkbasketTaskUsers.Where(b =>  b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == a.WorkflowAction.WorkflowLevel)
+                                                               //&& ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                               && ((a.WorkflowAction.WorkflowLevel == 0) ? (a.WorkflowAction.Status != completedStatus) : true)
+                                                               )
+                                                                .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                       .Select(c => new Workitems
+                                                       {
+                                                           Id = c.Id,
+                                                           TeamName = c.Team.TeamName,
+                                                           TaskName = c.TaskName,
+                                                           Status = c.WorkflowAction.Status,
+                                                           TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                           TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                           LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b =>  b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                           NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                           : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                 d.WFLevel == ((c.WorkbasketTaskUsers.Where(b =>  b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                             .Select(e => e.User.UserName).FirstOrDefault(),
+                                                           TotalRecords = 0,
+                                                           ActionsCanBeTakenAgainstWBTaskId =
+                                                            c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                            && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b =>  b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                            .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                           CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                          // period name required for creating directory for file upload
+                                                           PeriodName = c.Period.PeriodText,
+                                                           TenantName = c.Team.Location.Tenant.Name,
+                                                           WorkFlowId = c.WorkflowId,
+                                                           WorkflowName = c.Workflow.WorkflowName,
+                                                           PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                           PeriodYear = c.Period.PeriodYear.ToString(),
+                                                           LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                                                           RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                           EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                           Priority = c.Priority1.PriorityName,
+                                                           Description = c.Description,
+                                                           IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                        ));
+                   
+
+                    workitemList = workbasketQuery.OrderBy(rec => rec.Id).ToList();
+                    return workitemList;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+
+        public IEnumerable<SummaryInfo> SummaryReportOnDate(DateTime inputDate)
+        {
+            ECloseContext context = new ECloseContext();
+            List<SummaryInfo> Summaryinfo = new List<SummaryInfo>();
+           IEnumerable<SummaryInfo> SummaryList;
+          
+            try
+            {
+
+                SummaryList = (from result in 
+                                                (from wbusr in context.WorkbasketTaskUsers
+                                                 join wfl in context.WorkflowLevels
+                                                       on new { WorkflowId = (int)(wbusr.WorkbasketTask.WorkflowId), Level = wbusr.WorkbasketTask.WorkflowAction.WorkflowLevel }
+                                                   equals new { wfl.WorkflowId, wfl.Level }
+                                                 group new { wbusr.WorkbasketTask.Period, wbusr.WorkbasketTask.WorkflowAction, wbusr } by new
+                                                 {
+                                                     LocationId = (int?)wbusr.WorkbasketTask.Period.LocationId,
+                                                     wbusr.WorkbasketTask.WorkflowAction.Status,
+                                                     IsAction = (bool?)wbusr.WorkbasketTask.WorkflowAction.IsAction
+                                                 } into g
+                                                 select new
+                                                 {
+                                                     LocationId = (int?)g.Key.LocationId,
+                                                     g.Key.Status,
+                                                     EndDateInt = (DateTime?)g.Max(p => p.wbusr.EndDateInt),
+                                                     ActualEndDate = (DateTime?)g.Max(p => p.wbusr.ActualEndDate),
+                                                     IsAction = (bool?)g.Key.IsAction
+                                                 })
+                             group result by new
+                             {
+                                 result.LocationId
+                             } into g
+                             select new SummaryInfo
+                             {
+                                 LocationId= g.Key.LocationId,
+
+                                 PastClosedWithinTAT = g.Sum(p => (
+                                 p.EndDateInt < inputDate &&
+                                 p.ActualEndDate <= p.EndDateInt ? 1 : 0)),
+
+                                 PastClosedTATMissed = g.Sum(p => (
+                                 p.EndDateInt < inputDate &&
+                                 p.ActualEndDate > p.EndDateInt ? 1 : 0)),
+
+                                 PastOpenOnHold = g.Sum(p => (
+                                 p.EndDateInt < inputDate &&
+                                 p.ActualEndDate > p.EndDateInt &&
+                                 (p.Status == "Inputs Awaited" ||
+                                 p.Status == "System Issue" ||
+                                 p.Status == "Queried to Sivantos") ? 1 : 0)),
+
+                                 PastOpenWIP = g.Sum(p => (
+                                 p.EndDateInt < inputDate &&
+                                 p.ActualEndDate > p.EndDateInt &&
+                                 (p.Status == "WIP" ||
+                                 p.Status == "Sent to Review" ||
+                                 p.Status == "Approved" ||
+                                 p.Status == "Rejected") ? 1 : 0)),
+
+                                 PastOpenUnActioned = g.Sum(p => (
+                                   p.EndDateInt < inputDate &&
+                                   p.Status == "Pending" &&
+                                   p.IsAction == false ? 1 : 0)),
+
+                                 TodayClosedWithinTAT = g.Sum(p => (
+                                 p.EndDateInt == inputDate &&
+                                 p.ActualEndDate == p.EndDateInt ? 1 : 0)),
+
+                                 TodayOpenOnHold = g.Sum(p => (
+                                 p.EndDateInt == inputDate &&
+                                 p.Status == "Hold" ? 1 : 0)),
+
+                                 TodayOpenWIP = g.Sum(p => (
+                                 p.EndDateInt == inputDate &&
+                                 (p.Status == "WIP" ||
+                                 p.Status == "Sent to Review" ||
+                                 p.Status == "Approved" ||
+                                 p.Status == "Rejected") ? 1 : 0)),
+
+                                 TodayOpenUnActioned = g.Sum(p => (
+                                 p.EndDateInt == inputDate &&
+                                 p.Status == "Pending" &&
+                                 p.IsAction == false &&
+                                 p.EndDateInt == inputDate ? 1 : 0)),
+
+                                 FutureClosedBeforeTAT = g.Sum(p => (
+                                 p.EndDateInt > inputDate &&
+                                 p.ActualEndDate < p.EndDateInt ? 1 : 0)),
+
+                                 FutureOpenOnHold = g.Sum(p => (
+                                 p.EndDateInt > inputDate &&
+                                 p.Status == "Hold" ? 1 : 0)),
+
+                                 FutureOpenWIP = g.Sum(p => (
+                                 p.EndDateInt > inputDate &&
+                                 (p.Status == "WIP" ||
+                                 p.Status == "Sent to Review" ||
+                                 p.Status == "Approved" ||
+                                 p.Status == "Rejected") ? 1 : 0)),
+
+                                 FutureOpenUnActioned = g.Sum(p => (
+                                 p.EndDateInt > inputDate &&
+                                 p.Status == "Pending" &&
+                                 p.IsAction == false &&
+                                 p.EndDateInt == inputDate ? 1 : 0)),
+
+                                 PastTotal=0,
+                                 TodayTotal=0,
+                                 FutureTotal=0,
+                                 Total=0
+                                 }).ToList<SummaryInfo>();
+
+                foreach (var data in SummaryList)
+                {
+                    Summaryinfo.Add(data);
+                }
+
+
+                List<SummaryInfo> finalSummaryList = new List<SummaryInfo>();
+                finalSummaryList=(from result in  Summaryinfo
+                                                        select new SummaryInfo
+                                                        {
+                                                          LocationId = result.LocationId,
+                                                          PastClosedWithinTAT = result.PastClosedWithinTAT,
+                                                          PastClosedTATMissed = result.PastClosedTATMissed,
+                                                          PastOpenOnHold = result.PastOpenOnHold,
+                                                          
+
+                                                            PastOpenWIP = result.PastOpenWIP,
+
+                                                            PastOpenUnActioned =result.PastOpenUnActioned,
+
+                                                            TodayClosedWithinTAT = result.TodayClosedWithinTAT,
+
+                                                            TodayOpenOnHold = result.TodayOpenOnHold,
+
+                                                            TodayOpenWIP = result.TodayOpenWIP,
+
+                                                            TodayOpenUnActioned = result.TodayOpenUnActioned,
+
+                                                            FutureClosedBeforeTAT = result.FutureClosedBeforeTAT,
+
+                                                            FutureOpenOnHold = result.FutureOpenOnHold,
+
+                                                            FutureOpenWIP = result.FutureOpenWIP,
+
+                                                            FutureOpenUnActioned = result.FutureOpenUnActioned,
+                                                            PastTotal = result.PastClosedWithinTAT + result.PastClosedTATMissed + result.PastOpenOnHold + result.PastOpenWIP + result.PastOpenUnActioned,
+                                                            TodayTotal = result.TodayClosedWithinTAT+result.TodayOpenOnHold+result.TodayOpenWIP+result.TodayOpenUnActioned,
+                                                            FutureTotal = result.FutureClosedBeforeTAT+result.FutureOpenOnHold+result.FutureOpenWIP+result.FutureOpenWIP,
+
+                                                            Total= result.PastClosedWithinTAT + result.PastClosedTATMissed + result.PastOpenOnHold + result.PastOpenWIP + result.PastOpenUnActioned
+                                                                     + result.TodayClosedWithinTAT + result.TodayOpenOnHold + result.TodayOpenWIP + result.TodayOpenUnActioned
+                                                                     + result.FutureClosedBeforeTAT + result.FutureOpenOnHold + result.FutureOpenWIP + result.FutureOpenWIP
+
+                                                        }).ToList<SummaryInfo>();
+                   
+                return (finalSummaryList);
+            }
+            catch (Exception es)
+            {
+                throw;
+            }
+        }
+    }
+}
