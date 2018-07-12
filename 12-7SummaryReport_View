@@ -1,0 +1,350 @@
+@model ECloseWebApp.Models.ViewModelForBusinessUnitDD
+@using ECloseWebApp.Models;
+@using ECloseWebApp.BuisnessEntities;
+@using ECloseBL.Entities;
+
+@{
+    ViewBag.Title = "SummaryReport";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<script type="text/javascript">
+    $('#inputEntity').hide();
+    $('#LoadRecords').hide();
+    $('#divFilter').hide();
+
+    $(document).ready(function () {
+
+        $('#datetimepickerSummary').datetimepicker({
+            format: 'DD-MMM-YYYY',
+        });
+
+        var tokenId = '@Html.AntiForgeryToken()';
+
+        $("#Location").change(function () {
+            var tokenId = '@Html.AntiForgeryToken()';
+            if (LocationId != 0) {
+                $("#Team").attr('disabled', false);
+                $.post('@Url.Action("GetTeamByLocationId", "Rollover")', { LocationId: LocationId, __RequestVerificationToken: $(tokenId).val() },
+                function (results) {
+                    $("#Team").empty();
+                    $("#Team").append("<option value='0'>--All--</option>");
+                    $.each(results.Options, function (index, value) {
+                        $("#Team").append("<option value='" + value.Value + "'>" + value.DisplayText + "</option>");
+                    });
+                });
+            }
+            else {
+                $("#Team").empty();
+                $("#Team").append("<option value='0'>--Select--</option>");
+                $("#Team").attr('disabled', true);
+            }
+        });
+
+        //function validatePeriod(PeriodText) {
+        //    //if (PeriodText != '--Select--')
+        //    //{ return true; }
+        //    //else
+        //    //{
+        //    //    Command: toastr["warning"]("Please select Period");
+        //    //    return false;
+        //    //}
+        //    return true;
+        //}
+
+        //Nested Table for Summary Report
+
+        $("#btnSummaryReport").click(function () {
+            //var LocationId = $('#Location :selected').val();
+            //var PeriodText = $('#Period :selected').text();
+            //var TeamId = $('#Team :selected').val();
+            var Date = $('#summaryDate').val();
+            //PeriodText
+            if (validatePeriod()) {
+                $('#summaryReport').jtable({
+                    title: 'Summary Report',
+                    paging: true, //Enable paging
+                    sorting: true, //Enable sorting
+                    defaultSorting: 'Name ASC',
+                    actions: {
+                        listAction: function (postData, jtParams) {
+                            return $.Deferred(function ($dfd) {
+                                $.ajax({
+                                    url: 'Report/SummaryReportDetails?jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize + '&Date=' + Date,
+                                    type: 'POST',
+                                    dataType: 'json',
+                                    data: {
+                                        __RequestVerificationToken: $(tokenId).val(),
+                                    },
+                                    success: function (data) {
+                                        $dfd.resolve(data);
+                                    },
+                                    error: function () {
+                                        $dfd.reject();
+                                    }
+                                });
+                            });
+                        },
+                    },
+                    fields: {
+                        Id: {
+                            title: 'ID',
+                            key: true,
+                            create: false,
+                            edit: false,
+                            list: false
+                        },
+                        SrNo: {
+                            title: 'Sr.No.',
+                            create: false,
+                            edit: false,
+                            width: '5%',
+                            sorting: false
+                        },
+                        Location: {
+                            title: 'Location',
+                            width: '10%',
+                            edit: false
+                        },
+                        PastClosedWithinTAT: {
+                            title: 'PastClosedWithinTAT',
+                            width: '10%',
+                            edit: false
+                        },
+                        @*//CHILD TABLE DEFINITION FOR "PHONE NUMBERS"
+                        Others: {
+                            title: 'Summary In Details',
+                            width: '5%',
+                            sorting: false,
+                            edit: false,
+                            create: false,
+                            display: function (data) {
+                                //Create an image that will be used to open child table
+                                var $img = $(" <i class='fa fa-list fa-lg'></i>");
+                                //Open child table when user clicks the image
+                                $img.click(function () {
+                                    $('#summaryReport').jtable('openChildTable',
+                                            $img.closest('tr'),
+                                            {
+                                                title: data.record.Name,
+                                                actions: {
+                                                    listAction: function (postData, jtParams) {
+                                                        return $.Deferred(function ($dfd) {
+                                                            $.ajax({
+                                                                url: 'TaskTemplate/GetTask?jtStartIndex=' + jtParams.jtStartIndex + '&jtPageSize=' + jtParams.jtPageSize + '&TeamId=' + $('#Team :selected').val() + '&locationId=' + $('#Location :selected').val() + '&TaskName=' + $('#TaskName').val(),
+                                                                type: 'POST',
+                                                                dataType: 'json',
+                                                                data: {
+                                                                    __RequestVerificationToken: $(tokenId).val(),
+                                                                },
+                                                                success: function (data) {
+                                                                    $dfd.resolve(data);
+                                                                },
+                                                                error: function () {
+                                                                    $dfd.reject();
+                                                                }
+                                                            });
+                                                        });
+                                                    },
+                                                },
+                                                fields: {
+                                                    Id: {
+                                                        title: 'ID',
+                                                        key: true,
+                                                        create: false,
+                                                        edit: false,
+                                                        list: false
+                                                    },
+                                                    Location: {
+                                                        title: 'Location',
+                                                        create: false,
+                                                        edit: false
+                                                    },
+                                                    Team: {
+                                                        title: 'Team',
+                                                        create: false,
+                                                        edit: false
+                                                    },
+                                                    PeriodName: {
+                                                        title: 'Period',
+                                                        width: '15%'
+                                                    },
+                                                    TaskName: {
+                                                        title: '@LableConstants.WorkBasketTaskName',
+                                                        width: '45%'
+                                                    },
+                                                    PriorityId: {
+                                                        title: 'Priority',
+                                                        width: '10%',
+                                                        edit: false,
+                                                    },
+                                                    Status: {
+                                                        title: 'Status',
+                                                        width: '15%'
+                                                    },
+                                                    WorkflowLevelName: {
+                                                        title: 'Workflow Level',
+                                                        width: '23%'
+                                                    },
+                                                    UserName: {
+                                                        title: 'User',
+                                                        width: '20%',
+                                                    },
+                                                    InternalTATDate: {
+                                                        title: 'Due By Internal',
+                                                        width: '10%',
+                                                        type: 'date',
+                                                        edit: true,
+                                                        displayFormat: '@SessionWrapper.TenantDateFormat',
+                                                    },
+                                                    ExternalTATDate: {
+                                                        title: 'Due By External',
+                                                        width: '10%',
+                                                        type: 'date',
+                                                        edit: true,
+                                                        displayFormat: '@SessionWrapper.TenantDateFormat',
+                                                    }
+                                                }
+                                            }, function (data) { //opened handler
+                                                data.childTable.jtable('load');
+                                            });
+                                });
+                                //Return image to show on the person row
+                                return $img;
+                            }
+                        },*@
+                        PastClosedTATMissed: {
+                            title: 'PastClosedTATMissed',
+                            width: '10%',
+                            edit: false
+                        },
+                        PastOpenOnHold: {
+                            title: 'PastOpenOnHold',
+                            width: '10%',
+                            edit: false
+                        },
+                        PastOpenWIP: {
+                            title: 'PastOpenWIP',
+                            width: '10%',
+                            edit: false
+                        },
+                        PastOpenUnActioned: {
+                            title: 'PastOpenUnActioned',
+                            width: '10%',
+                            edit: false
+                        },
+                        PastTotal: {
+                            title: 'PastTotal',
+                            width: '10%',
+                            edit: false
+                        },
+                        TodayClosedWithinTAT: {
+                            title: 'TodayClosedWithinTAT',
+                            width: '10%',
+                            edit: false
+                        },
+                        TodayOpenOnHold: {
+                            title: 'TodayOpenOnHold',
+                            width: '10%',
+                            edit: false
+                        },
+                        TodayOpenWIP: {
+                            title: 'TodayOpenWIP',
+                            width: '10%',
+                            edit: false
+                        },
+                        TodayOpenUnActioned: {
+                            title: 'TodayOpenUnActioned',
+                            width: '10%',
+                            edit: false
+                        },
+                        TodayTotal: {
+                            title: 'TodayTotal',
+                            width: '10%',
+                            edit: false
+                        },
+                        FutureClosedBeforeTAT: {
+                            title: 'FutureClosedBeforeTAT',
+                            width: '10%',
+                            edit: false
+                        },
+                        FutureOpenOnHold: {
+                            title: 'FutureOpenOnHold',
+                            width: '10%',
+                            edit: false
+                        },
+                        FutureOpenWIP: {
+                            title: 'FutureOpenWIP',
+                            width: '10%',
+                            edit: false
+                        },
+                        FutureOpenUnActioned: {
+                            title: 'FutureOpenUnActioned',
+                            width: '10%',
+                            edit: false
+                        },
+                      
+                       
+                        FutureTotal: {
+                            title: 'FutureTotal',
+                            width: '10%',
+                            edit: false
+                        }
+                    }
+                });
+                //Load details from server
+                $('#summaryReport').jtable('load');
+            }
+        });
+    });
+</script>
+<div class="panel panel-white">
+    <div class="panel-body">
+        <div class="row">
+            @*<div class="col-md-3">
+                <div class="form-group  no-m">
+                    <label title="" runat="server">
+                        Period:
+                    </label>
+                    @Html.DropDownListFor(m => m.Period, Model.Period, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group  ">
+                    <label title="" runat="server">
+                        Location :
+                    </label>
+                    @Html.DropDownListFor(m => m.Location, Model.Location, new { @class = "form-control" })
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group  ">
+                    <label title="" runat="server">
+                        Team :
+                    </label>
+                    @Html.DropDownListFor(m => m.Team, Model.Team, new { @class = "form-control" })
+                </div>
+            </div>*@
+            <div class="col-md-3">
+                <div class="form-group  ">
+                    <label title="" runat="server">
+                        Date :
+                    </label>
+                    <div class='input-group date' id='datetimepickerSummary'>
+                        <input type='text' class="form-control" name="datepicker" id="summaryDate" onkeydown="return false;" onpaste="return false;" />
+                        <span class="input-group-addon">
+                            <span class="glyphicon glyphicon-calendar">
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-footer">
+        <button id="btnSummaryReport" class="btn btn-primary" type="button"><span id="btnSummaryReport">Generate SummaryReport</span></button>
+    </div>
+</div>
+
+<div id="summaryReport" style="margin-top: 5%;">
+</div>
