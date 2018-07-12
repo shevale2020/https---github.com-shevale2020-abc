@@ -1,0 +1,104 @@
+ public class querys
+    {
+        public void queryResult()
+        {
+            DateTime inputDate = new DateTime();
+            WebApplication4.eClose_DevEntities context = new WebApplication4.eClose_DevEntities();
+            try
+            {
+
+           
+            var output = from result in (
+                                            (from wbusr in context.WorkbasketTaskUsers
+                                             join wfl in context.WorkflowLevels
+                                                   on new { WorkflowId = (int)(wbusr.WorkbasketTask.WorkflowId), Level = wbusr.WorkbasketTask.WorkflowAction.WorkflowLevel }
+                                               equals new { wfl.WorkflowId, wfl.Level }
+                                             group new { wbusr.WorkbasketTask.Period, wbusr.WorkbasketTask.WorkflowAction, wbusr } by new
+                                             {
+                                                 LocationId = (int?)wbusr.WorkbasketTask.Period.LocationId,
+                                                 wbusr.WorkbasketTask.WorkflowAction.Status,
+                                                 IsAction = (bool?)wbusr.WorkbasketTask.WorkflowAction.IsAction
+                                             } into g
+                                             select new
+                                             {
+                                                 LocationId = (int?)g.Key.LocationId,
+                                                 g.Key.Status,
+                                                 EndDateInt = (DateTime?)g.Max(p => p.wbusr.EndDateInt),
+                                                 ActualEndDate = (DateTime?)g.Max(p => p.wbusr.ActualEndDate),
+                                                 IsAction = (bool?)g.Key.IsAction
+                                             }))
+                         group result by new
+                         {
+                             result.LocationId
+                         } into g
+                         select new
+                         {
+                             g.Key.LocationId,
+                             Closed_With_in_TAT = g.Sum(p => (
+                             p.EndDateInt < inputDate &&
+                             p.ActualEndDate <= p.EndDateInt ? 1 : 0)),
+                             Closed_TAT_Missed = g.Sum(p => (
+                             p.EndDateInt < inputDate &&
+                             p.ActualEndDate > p.EndDateInt ? 1 : 0)),
+                             Open_On_Hold = g.Sum(p => (
+                             p.EndDateInt < inputDate &&
+                             p.ActualEndDate > p.EndDateInt &&
+                             (p.Status == "Inputs Awaited" ||
+                             p.Status == "System Issue" ||
+                             p.Status == "Queried to Sivantos") ? 1 : 0)),
+                             Open_WIP = g.Sum(p => (
+                             p.EndDateInt < inputDate &&
+                             p.ActualEndDate > p.EndDateInt &&
+                             (p.Status == "WIP" ||
+                             p.Status == "Sent to Review" ||
+                             p.Status == "Approved" ||
+                             p.Status == "Rejected") ? 1 : 0)),
+                             Open_Un_Actioned = g.Sum(p => (
+                               p.EndDateInt < inputDate &&
+                               p.Status == "Pending" &&
+                               p.IsAction == false ? 1 : 0)),
+                             Column1 = g.Sum(p => (
+                             p.EndDateInt == inputDate &&
+                             p.ActualEndDate == p.EndDateInt ? 1 : 0)),
+                             Column2 = g.Sum(p => (
+                             p.EndDateInt == inputDate &&
+                             p.Status == "Hold" ? 1 : 0)),
+                             Column3 = g.Sum(p => (
+                             p.EndDateInt == inputDate &&
+                             (p.Status == "WIP" ||
+                             p.Status == "Sent to Review" ||
+                             p.Status == "Approved" ||
+                             p.Status == "Rejected") ? 1 : 0)),
+                             Column4 = g.Sum(p => (
+                             p.EndDateInt == inputDate &&
+                             p.Status == "Pending" &&
+                             p.IsAction == false &&
+                             p.EndDateInt == inputDate ? 1 : 0)),
+                             Closed_Before_TAT = g.Sum(p => (
+                             p.EndDateInt > inputDate &&
+                             p.ActualEndDate < p.EndDateInt ? 1 : 0)),
+                             Column5 = g.Sum(p => (
+                             p.EndDateInt > inputDate &&
+                             p.Status == "Hold" ? 1 : 0)),
+                             Column6 = g.Sum(p => (
+                             p.EndDateInt > inputDate &&
+                             (p.Status == "WIP" ||
+                             p.Status == "Sent to Review" ||
+                             p.Status == "Approved" ||
+                             p.Status == "Rejected") ? 1 : 0)),
+                             Column7 = g.Sum(p => (
+                             p.EndDateInt > inputDate &&
+                             p.Status == "Pending" &&
+                             p.IsAction == false &&
+                             p.EndDateInt == inputDate ? 1 : 0))
+
+                         };
+
+            }
+            catch (Exception es)
+            {
+
+                throw;
+            }
+        }
+    }
