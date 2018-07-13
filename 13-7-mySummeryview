@@ -14,20 +14,25 @@
     <div class="panel-body">
         <div class="row">
       
-            <div class="col-md-3">
-                <div class="form-group  ">
-                    <label title="" runat="server">
-                        Date :
-                    </label>
-                    <div class='input-group date' id='datetimepickerSummary'>
-                        <input type='text' class="form-control" name="datepicker" id="summaryDate" onkeydown="return false;" onpaste="return false;" />
-                        <span class="input-group-addon">
-                            <span class="glyphicon glyphicon-calendar">
-                            </span>
+              <form action="/TaskSummery/SummeryReport" method="post" target="_self">
+        <div class="col-md-3">
+            <div class="form-group  ">
+                <label title="" runat="server">
+                    Date :
+                </label>
+                <div class='input-group date' id='datetimepickerSummary'>
+                    <input type='text' class="form-control" name="datepicker" id="summaryDate" onkeydown="return false;" onpaste="return false;" />
+                    <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-calendar">
                         </span>
-                    </div>
+                    </span>
                 </div>
             </div>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" value="Filter Date">Filter Date</button>
+        </div>
+    </form>
         </div>
     </div>
     <div class="panel-footer">
