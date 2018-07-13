@@ -1,0 +1,18 @@
+//ServerSide changes controler action method 
+
+    public ActionResult SummeryReport(string inputDate="" )
+        {
+            DateTime input;
+            if (inputDate == "")
+            {
+                 input = DateTime.Now;
+            }
+            else
+            {
+                input = DateTime.Parse(inputDate);
+
+            }
+            querys data = new querys();
+
+            return View(data.SummaryReportOnDate(input));
+        }
