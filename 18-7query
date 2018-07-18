@@ -1,35 +1,8 @@
  
  
- <---main query--->//hya query madhe IntEndDay add karayche ahe
- 
- var TotalRecords = context.Tasks.Where(rec => rec.TeamId == TeamId && rec.TaskName == TaskName && rec.IsDeleted == false).OrderByDescending(a => a.Id).Count();
-                var Tasklist = context.Tasks.Where(rec => rec.TeamId == TeamId && rec.TaskName == TaskName && rec.IsDeleted == false).OrderByDescending(a => a.Id)
-                    .Select(a => new ECloseBL.Entities.Task
-                    {
-                        Id = a.Id,
-            //Add------->IntEndDay=            
-                        TaskNumber = a.TaskNumber,
-                        TaskName = a.TaskName,
-                        TeamId = a.TeamId,
-                        Frequency = a.Frequency,
-                        WorkflowId = a.WorkflowId,
-                        IsActive = a.IsActive,
-                        IsDeleted = a.IsDeleted,
-                        PriorityId = a.PriorityId,
-                        Description = a.Description,
-                        TotalRecords = TotalRecords
-
-                    }).ToList();
-                    
-                    
-                    
-                    
-   ///IntEndDay ya query madhun yeto - suppose eka task sati multiple IntEndDay ale 
-   -tar tyatun min IntEndDay gheychay ani 
-  - sglych null asel tar 0 show karayche ahe 
-   -otherwise ekadi jari null asel tar rahilelya record madhli min IntEndDay gheychay
-  return context.TaskTemplateusers.Where(rec => rec.TaskId == TaskId && rec.IsDeleted == false).ToList();
-  
+  return context.DependentTasks.Where(rec => rec.TaskId == TaskId && rec.IsDeleted == false)
+                .Select(rec => new ECloseBL.Entities.DependentTask
+                { Location = rec.Task1.Team.Location.LocationName, Team = rec.Task1.Team.TeamName, DependentTaskId = rec.DependentTaskId, TeamId = rec.Task1.TeamId, Id = rec.Id }).ToList();
   
   
   
