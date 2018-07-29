@@ -1,0 +1,387 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Web;
+
+namespace WebApplication4
+{
+    public class SummaryInfo
+    {
+
+        public int? LocationId { get; set; }
+        public int PastClosedWithinTAT { get; set; }
+        public int PastClosedTATMissed { get; set; }
+        public int PastOpenOnHold { get; set; }
+        public int PastOpenWIP { get; set; }
+        public int PastOpenUnActioned { get; set; }
+        public int TodayClosedWithinTAT { get; set; }
+        public int TodayOpenOnHold { get; set; }
+        public int TodayOpenWIP { get; set; }
+        public int TodayOpenUnActioned { get; set; }
+        public int FutureClosedBeforeTAT { get; set; }
+        public int FutureOpenOnHold { get; set; }
+        public int FutureOpenWIP { get; set; }
+        public int FutureOpenUnActioned { get; set; }
+        public int PastTotal { get; set; }
+        public int TodayTotal { get; set; }
+        public int FutureTotal { get; set; }
+        public int Total { get; set; }
+        public string LocationName { get; set; }
+        public int? TeamId { get; set; }
+        public string TeamName { get; set; }
+    }
+    public class SubTaskDetail
+    {
+
+        public int? LocationId { get; set; }
+        public string LocationName { get; set; }
+        public string TaskName { get; set; }
+        public string Status { get; set; }
+        public bool? IsAction { get; set; }
+        public DateTime? EndDateInt { get; set; }
+        public DateTime? ActualEndDate { get; set; }
+        public int? TeamId { get; set; }
+        public string TeamName { get; set; }
+        public int? Id { get; set; }
+
+    }
+
+    public class querys
+    {
+
+
+
+        public IEnumerable<SubTaskDetail> SubReportDetail(string locationName, string teamName, string taskType, DateTime inputDate, int tenantId)
+        {
+            eClose_DevEntities context = new eClose_DevEntities();
+
+            IQueryable<SubTaskDetail> taskDetails = (from wbusr in context.WorkbasketTaskUsers
+                                                     join wfl in context.WorkflowLevels
+                                                           on new { WorkflowId = (int)(wbusr.WorkbasketTask.WorkflowId), Level = wbusr.WorkbasketTask.WorkflowAction.WorkflowLevel }
+                                                       equals new { wfl.WorkflowId, wfl.Level }
+                                                     where (wbusr.WorkbasketTask.Period.Location.LocationName == locationName) &&
+                                                     (wbusr.WorkbasketTask.Team.TeamName == teamName) && (wbusr.TenantId == tenantId)
+                                                     group new { wbusr.WorkbasketTask.Period, wbusr.WorkbasketTask.WorkflowAction, wbusr } by new
+                                                     {
+
+                                                         Id = (int?)wbusr.WorkbasketTask.Id,
+                                                         LocationId = (int?)wbusr.WorkbasketTask.Period.LocationId,
+                                                         LocationName = wbusr.WorkbasketTask.Period.Location.LocationName,
+                                                         Status = wbusr.WorkbasketTask.WorkflowAction.Status,
+                                                         IsAction = (bool?)wbusr.WorkbasketTask.WorkflowAction.IsAction,
+                                                         TaskName = wbusr.WorkbasketTask.TaskName,
+                                                         TeamName = wbusr.WorkbasketTask.Team.TeamName,
+                                                         TaskId = wbusr.WorkbasketTask.TaskId,
+                                                         TeamId = wbusr.WorkbasketTask.TeamId
+,
+
+                                                     } into g
+                                                     select new SubTaskDetail
+                                                     {
+                                                         TeamId = (int?)g.Key.TeamId,
+                                                         TeamName = g.Key.TeamName,
+                                                         LocationId = (int?)g.Key.LocationId,
+                                                         Status = g.Key.Status,
+                                                         TaskName = g.Key.TaskName,
+                                                         LocationName = g.Key.LocationName,
+                                                         EndDateInt = (DateTime?)g.Max(p => p.wbusr.EndDateInt),
+                                                         ActualEndDate = (DateTime?)g.Max(p => p.wbusr.ActualEndDate),
+                                                         IsAction = (bool?)g.Key.IsAction
+                                                     });
+            switch (taskType)
+            {
+                case "PastClosedWithinTAT":
+                    return taskDetails.Where(p => p.EndDateInt < inputDate &&
+                                  p.ActualEndDate <= p.EndDateInt);
+                case "PastClosedTATMissed":
+                    return taskDetails.Where(p =>
+                                  p.EndDateInt < inputDate &&
+                                  p.ActualEndDate > p.EndDateInt);
+                case "PastOpenOnHold":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt < inputDate &&
+                                  p.ActualEndDate > p.EndDateInt &&
+                                  (p.Status == "Inputs Awaited" ||
+                                  p.Status == "System Issue" ||
+                                  p.Status == "Queried to Sivantos")));
+                case "PastOpenWIP":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt < inputDate &&
+                                  p.ActualEndDate > p.EndDateInt &&
+                                  (p.Status == "WIP" ||
+                                  p.Status == "Sent to Review" ||
+                                  p.Status == "Approved" ||
+                                  p.Status == "Rejected")));
+                case "PastOpenUnActioned":
+                    return taskDetails.Where(p => (
+                                     p.EndDateInt < inputDate &&
+                                     p.Status == "Pending" &&
+                                     p.IsAction == false));
+                case "TodayClosedWithinTAT":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt == inputDate &&
+                                  p.ActualEndDate == p.EndDateInt));
+                case "TodayOpenOnHold":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt == inputDate &&
+                                  p.Status == "Hold"));
+                case "TodayOpenWIP":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt == inputDate &&
+                                  (p.Status == "WIP" ||
+                                  p.Status == "Sent to Review" ||
+                                  p.Status == "Approved" ||
+                                  p.Status == "Rejected")));
+                case "TodayOpenUnActioned":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt == inputDate &&
+                                  p.Status == "Pending" &&
+                                  p.IsAction == false &&
+                                  p.EndDateInt == inputDate));
+
+                case "FutureClosedBeforeTAT":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt > inputDate &&
+                                  p.ActualEndDate < p.EndDateInt));
+                case "FutureOpenOnHold":
+                    return taskDetails.Where(p => (
+                                   p.EndDateInt > inputDate &&
+                                   p.Status == "Hold"));
+
+                case "FutureOpenWIP":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt > inputDate &&
+                                  (p.Status == "WIP" ||
+                                  p.Status == "Sent to Review" ||
+                                  p.Status == "Approved" ||
+                                  p.Status == "Rejected")));
+                case "FutureOpenUnActioned":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt > inputDate &&
+                                  p.Status == "Pending" &&
+                                  p.IsAction == false &&
+                                  p.EndDateInt == inputDate));
+                case "PastTotal":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt < inputDate));
+                case "TodayTotal":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt == inputDate));
+                case "FutureTotal":
+                    return taskDetails.Where(p => (
+                                  p.EndDateInt > inputDate));
+                default:
+                    return taskDetails;
+
+
+            }
+
+        }
+        public IEnumerable<SummaryInfo> SummaryReportOnDate(DateTime inputDate, int LocationId, int PeriodId, int TeamId, int tenantId)
+        {
+
+            eClose_DevEntities context = new eClose_DevEntities();
+            List<SummaryInfo> Summaryinfo = new List<SummaryInfo>();
+
+
+            try
+            {
+                IQueryable<SubTaskDetail> SummaryList = (from wbusr in context.WorkbasketTaskUsers
+                                                         join wfl in context.WorkflowLevels
+                                                               on new { WorkflowId = (int)(wbusr.WorkbasketTask.WorkflowId), Level = wbusr.WorkbasketTask.WorkflowAction.WorkflowLevel }
+                                                           equals new { wfl.WorkflowId, wfl.Level }
+                                                         where (wbusr.TenantId == tenantId)
+                                                         group new { wbusr.WorkbasketTask.Period, wbusr.WorkbasketTask.WorkflowAction, wbusr } by new
+                                                         {
+
+                                                             Id = (int?)wbusr.WorkbasketTask.Id,
+                                                             LocationId = (int?)wbusr.WorkbasketTask.Period.LocationId,
+                                                             LocationName = wbusr.WorkbasketTask.Period.Location.LocationName,
+                                                             wbusr.WorkbasketTask.WorkflowAction.Status,
+                                                             IsAction = (bool?)wbusr.WorkbasketTask.WorkflowAction.IsAction,
+                                                             TeamId = wbusr.WorkbasketTask.TeamId,
+                                                             TeamName = wbusr.WorkbasketTask.Team.TeamName,
+
+                                                         } into g1
+                                                         select new SubTaskDetail
+                                                         {
+                                                             Id = g1.Key.Id,
+                                                             TeamName = g1.Key.TeamName,
+                                                             TeamId = g1.Key.TeamId,
+                                                             LocationId = (int?)g1.Key.LocationId,
+                                                             LocationName = g1.Key.LocationName,
+                                                             Status = g1.Key.Status,
+                                                             EndDateInt = (DateTime?)g1.Max(p => p.wbusr.EndDateInt),
+                                                             ActualEndDate = (DateTime?)g1.Max(p => p.wbusr.ActualEndDate),
+                                                             IsAction = (bool?)g1.Key.IsAction
+
+                                                         });
+
+                IEnumerable<SubTaskDetail> summaryInfoNew;
+                if (LocationId == 0 && TeamId != 0)
+                {
+                    summaryInfoNew = SummaryList.Where(x => x.TeamId == TeamId);
+                }
+                else if (LocationId != 0 && TeamId == 0)
+                {
+                    summaryInfoNew = SummaryList.Where(x => x.LocationId == LocationId);
+
+                }
+                else if (LocationId != 0 && TeamId != 0)
+                {
+                    summaryInfoNew = SummaryList.Where(x => x.LocationId == LocationId && x.TeamId == TeamId);
+
+                }
+                else
+                {
+                    summaryInfoNew = SummaryList;
+                }
+
+
+
+                IEnumerable<SummaryInfo> SummaryDetail = (from result in SummaryList
+
+                                                          group result by new
+                                                          {
+                                                              result.LocationId,
+                                                              result.LocationName,
+                                                              result.TeamName,
+                                                              result.TeamId
+
+                                                          } into g
+                                                          select new SummaryInfo
+                                                          {
+                                                              LocationId = g.Key.LocationId,
+                                                              LocationName = g.Key.LocationName,
+                                                              TeamId = g.Key.TeamId,
+                                                              TeamName = g.Key.TeamName,
+
+                                                              PastClosedWithinTAT = g.Sum(p => (
+                                                              p.EndDateInt < inputDate &&
+                                                              p.ActualEndDate <= p.EndDateInt ? 1 : 0)),
+
+                                                              PastClosedTATMissed = g.Sum(p => (
+                                                              p.EndDateInt < inputDate &&
+                                                              p.ActualEndDate > p.EndDateInt ? 1 : 0)),
+
+                                                              PastOpenOnHold = g.Sum(p => (
+                                                              p.EndDateInt < inputDate &&
+                                                              p.ActualEndDate > p.EndDateInt &&
+                                                              (p.Status == "Inputs Awaited" ||
+                                                              p.Status == "System Issue" ||
+                                                              p.Status == "Queried to Sivantos") ? 1 : 0)),
+
+                                                              PastOpenWIP = g.Sum(p => (
+                                                              p.EndDateInt < inputDate &&
+                                                              p.ActualEndDate > p.EndDateInt &&
+                                                              (p.Status == "WIP" ||
+                                                              p.Status == "Sent to Review" ||
+                                                              p.Status == "Approved" ||
+                                                              p.Status == "Rejected") ? 1 : 0)),
+
+                                                              PastOpenUnActioned = g.Sum(p => (
+                                                                p.EndDateInt < inputDate &&
+                                                                p.Status == "Pending" &&
+                                                                p.IsAction == false ? 1 : 0)),
+
+                                                              TodayClosedWithinTAT = g.Sum(p => (
+                                                              p.EndDateInt == inputDate &&
+                                                              p.ActualEndDate == p.EndDateInt ? 1 : 0)),
+
+                                                              TodayOpenOnHold = g.Sum(p => (
+                                                              p.EndDateInt == inputDate &&
+                                                              p.Status == "Hold" ? 1 : 0)),
+
+                                                              TodayOpenWIP = g.Sum(p => (
+                                                              p.EndDateInt == inputDate &&
+                                                              (p.Status == "WIP" ||
+                                                              p.Status == "Sent to Review" ||
+                                                              p.Status == "Approved" ||
+                                                              p.Status == "Rejected") ? 1 : 0)),
+
+                                                              TodayOpenUnActioned = g.Sum(p => (
+                                                              p.EndDateInt == inputDate &&
+                                                              p.Status == "Pending" &&
+                                                              p.IsAction == false &&
+                                                              p.EndDateInt == inputDate ? 1 : 0)),
+
+                                                              FutureClosedBeforeTAT = g.Sum(p => (
+                                                              p.EndDateInt > inputDate &&
+                                                              p.ActualEndDate < p.EndDateInt ? 1 : 0)),
+
+                                                              FutureOpenOnHold = g.Sum(p => (
+                                                              p.EndDateInt > inputDate &&
+                                                              p.Status == "Hold" ? 1 : 0)),
+
+                                                              FutureOpenWIP = g.Sum(p => (
+                                                              p.EndDateInt > inputDate &&
+                                                              (p.Status == "WIP" ||
+                                                              p.Status == "Sent to Review" ||
+                                                              p.Status == "Approved" ||
+                                                              p.Status == "Rejected") ? 1 : 0)),
+
+                                                              FutureOpenUnActioned = g.Sum(p => (
+                                                              p.EndDateInt > inputDate &&
+                                                              p.Status == "Pending" &&
+                                                              p.IsAction == false &&
+                                                              p.EndDateInt == inputDate ? 1 : 0)),
+
+                                                              PastTotal = 0,
+                                                              TodayTotal = 0,
+                                                              FutureTotal = 0,
+                                                              Total = 0
+                                                          }).ToList<SummaryInfo>();
+
+
+
+                List<SummaryInfo> finalSummaryList = new List<SummaryInfo>();
+                finalSummaryList = (from result in SummaryDetail
+                                    select new SummaryInfo
+                                    {
+                                        LocationId = result.LocationId,
+                                        LocationName = result.LocationName,
+                                        TeamName = result.TeamName,
+                                        PastClosedWithinTAT = result.PastClosedWithinTAT,
+                                        PastClosedTATMissed = result.PastClosedTATMissed,
+                                        PastOpenOnHold = result.PastOpenOnHold,
+
+
+                                        PastOpenWIP = result.PastOpenWIP,
+
+                                        PastOpenUnActioned = result.PastOpenUnActioned,
+
+                                        TodayClosedWithinTAT = result.TodayClosedWithinTAT,
+
+                                        TodayOpenOnHold = result.TodayOpenOnHold,
+
+                                        TodayOpenWIP = result.TodayOpenWIP,
+
+                                        TodayOpenUnActioned = result.TodayOpenUnActioned,
+
+                                        FutureClosedBeforeTAT = result.FutureClosedBeforeTAT,
+
+                                        FutureOpenOnHold = result.FutureOpenOnHold,
+
+                                        FutureOpenWIP = result.FutureOpenWIP,
+
+                                        FutureOpenUnActioned = result.FutureOpenUnActioned,
+                                        PastTotal = result.PastClosedWithinTAT + result.PastClosedTATMissed + result.PastOpenOnHold + result.PastOpenWIP + result.PastOpenUnActioned,
+                                        TodayTotal = result.TodayClosedWithinTAT + result.TodayOpenOnHold + result.TodayOpenWIP + result.TodayOpenUnActioned,
+                                        FutureTotal = result.FutureClosedBeforeTAT + result.FutureOpenOnHold + result.FutureOpenWIP + result.FutureOpenWIP,
+
+                                        Total = result.PastClosedWithinTAT + result.PastClosedTATMissed + result.PastOpenOnHold + result.PastOpenWIP + result.PastOpenUnActioned
+                                                 + result.TodayClosedWithinTAT + result.TodayOpenOnHold + result.TodayOpenWIP + result.TodayOpenUnActioned
+                                                 + result.FutureClosedBeforeTAT + result.FutureOpenOnHold + result.FutureOpenWIP + result.FutureOpenWIP
+
+                                    }).ToList<SummaryInfo>();
+
+                return (finalSummaryList);
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
+        }
+
+    } }
