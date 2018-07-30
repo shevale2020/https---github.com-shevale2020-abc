@@ -1,0 +1,1 @@
+ INSERT INTO   [User] (UserName,LoginId,Email,RoleId,SupervisorId,RecCreatedBy,RecCreatedDate,RecUpdatedBy,RecUpdatedDate,RecDeletedBy,RecDeletedDate,Isdeleted,[Password],IsOnshoreUser,TenantId) VALUES ('VIDYARANI NETAKE' ,'U288335','VIDYARANI.NETAKE@WNS.COM',10,'995','999',2018-07-30,'999',2018-07-30,'', '' ,0,'',0 ,57)  
