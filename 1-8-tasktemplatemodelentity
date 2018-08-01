@@ -1,0 +1,48 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ECloseBL.Entities
+{
+  public  class TaskTemplateuser
+    {
+        public int Id { get; set; }
+        public int TaskId { get; set; }
+        public Nullable<int> UserId { get; set; }
+        public int Level { get; set; }
+        public Nullable<short> IntEndDay { get; set; }
+        public string IntEndTime { get; set; }
+        public Nullable<short> ExtEndDay { get; set; }
+        public string ExtEndTime { get; set; }
+        public Nullable<short> IntDuration { get; set; }
+        public Nullable<short> Extduration { get; set; }
+        public string CreatedBy { get; set; }
+        public Nullable<System.DateTime> CreatedOn { get; set; }
+        public Nullable<System.DateTime> UpdatedOn { get; set; }
+        public string UpdatyedBy { get; set; }
+        public bool IsDeleted { get; set; }
+        public string DeletedBy { get; set; }
+        public string DeletedOn { get; set; }
+        public Nullable<short> W1IntEndDay { get; set; }
+        public Nullable<short> W2IntEndDay { get; set; }
+        public Nullable<short> W3IntEndDay { get; set; }
+        public Nullable<short> W4IntEndDay { get; set; }
+        public Nullable<short> W1ExtEndDay { get; set; }
+        public Nullable<short> W2ExtEndDay { get; set; }
+        public Nullable<short> W3ExtEndDay { get; set; }
+        public Nullable<short> W4ExtEndDay { get; set; }
+        public string W1IntEndTime { get; set; }
+        public string W2IntEndTime { get; set; }
+        public string W3IntEndTime { get; set; }
+        public string W4IntEndTime { get; set; }
+        public string W1ExtEndTime { get; set; }
+        public string W2ExtEndTime { get; set; }
+        public string W3ExtEndTime { get; set; }
+        public string W4ExtEndTime { get; set; }
+        public int TenantId { get; set; }
+
+        public int PeriodId { get; set; }
+    }
+}
