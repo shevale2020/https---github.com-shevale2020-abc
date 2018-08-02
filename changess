@@ -1,0 +1,324 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Web;
+using System.Web.Mvc;
+
+namespace WebApplication4.Controllers
+{
+    public class UserController : Controller
+    {
+        abc cls = new abc();
+        public ActionResult Index()
+        {
+
+            var theGalaxies = new List<Galaxy>
+        {
+            new Galaxy() { Name="Tadpole", MegaLightYears=400},
+            new Galaxy() { Name="Pinwheel", MegaLightYears=25},
+            new Galaxy() { Name="Milky Way", MegaLightYears=0},
+            new Galaxy() { Name="Andromeda", MegaLightYears=3}
+        };
+
+            return View(theGalaxies);
+        }
+        public JsonResult ListWorkDays(int TaskId = 0, int leval = 0)
+        {
+
+            string Frequency = Session["Frequency"].ToString();
+            if (Frequency == "Daily")
+            {
+                var result = WorkDays.Daily().Where(x => CheckValue(x.Value, TaskId, leval, "IntEndDay", cls.GetTaskTemplate(TaskId, leval)) == true).ToList();
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+            else
+            {
+                var result = WorkDays.WorkDaysList().Where(x => CheckValue(x.Value, TaskId, leval, "IntEndDay", cls.GetTaskTemplate(TaskId, leval)) == true).ToList();
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+        }
+        public bool CheckValue(string Value, int taskId, int leval, string propertyName, TaskTemplateuser tskTemplate)
+        {
+            if (leval == 0)
+            {
+                return true;
+            }
+            else
+            {
+                if (tskTemplate == null)
+                    return true;
+                else
+                {
+                    Type t = tskTemplate.GetType();
+                    PropertyInfo prop = t.GetProperty(propertyName);
+                    object propertyValue = prop.GetValue(tskTemplate);
+                    return propertyValue == null ? true :int.Parse(Value) >= int.Parse( propertyValue.ToString());
+                }
+            }
+        }
+    }
+    public class abc
+    { 
+           eClose_DevEntities context = new eClose_DevEntities();
+
+    public TaskTemplateuser GetTaskTemplate(int taskId, int level)
+    {
+
+        var TaskTemplateuser = context.TaskTemplateusers.Where(a => a.TaskId == taskId && a.Level == (level - 1));
+
+        if (TaskTemplateuser.Count() > 0)
+        {
+            return TaskTemplateuser.First();
+        }
+        return null;
+    }
+}
+    public class Galaxy
+    {
+        public string Name { get; set; }
+        public int MegaLightYears { get; set; }
+    }
+    public static class WorkDays
+    {
+        //public static Dictionary<int, string> WorkDaysListNew()
+        //{
+        //    Dictionary<int, string> myList = new Dictionary<int, string>();
+
+        //    myList.Add(0, "NA");
+        //    myList.Add(-5," - 5");
+        //    myList.Add(-4," - 4");
+        //      myList.Add(-3," - 3");
+        //  myList.Add(-2",Text=" - 2");
+        //        myList.Add(-1",Text=" - 1");
+        //        myList.Add(1",Text="1");
+        //      myList.Add(2",Text="2");
+        //        myList.Add(3",Text="3");
+        //        myList.Add(4",Text="4");
+        //       myList.Add(5",Text="5");
+        //       myList.Add(6",Text="6");
+        //        myList.Add(7",Text="7");
+        //        myList.Add(8",Text="8");
+        //        myList.Add(9",Text="9");
+        //      myList.Add(10",Text="10");
+        //       myList.Add(11",Text="11");
+        //       myList.Add(12",Text="12");
+        //        myList.Add(13",Text="13");
+        //         myList.Add(14",Text="14");
+        //        myList.Add(15",Text="15");
+        //         myList.Add(16",Text="16");
+        //        myList.Add(17",Text="17");
+        //         myList.Add(18",Text="18");
+        //         myList.Add(19",Text="19");
+        //         myList.Add(20",Text="20");
+        //         myList.Add(21",Text="21");
+        //         myList.Add(22",Text="22");
+        //         myList.Add(23",Text="23");
+        //        myList.Add(24",Text="24");
+        //        myList.Add(25",Text="25");
+        //     };
+        //myList = data.ToList();
+        //    return myList;
+        //}
+        public static List<SelectListItem> WorkDaysList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value="0",Text="NA"},
+                 new SelectListItem{ Value="-5",Text="-5"},
+                 new SelectListItem{ Value="-4",Text="-4"},
+                 new SelectListItem{ Value="-3",Text="-3"},
+                 new SelectListItem{ Value="-2",Text="-2"},
+                 new SelectListItem{ Value="-1",Text="-1"},
+                 new SelectListItem{ Value="1",Text="1"},
+                 new SelectListItem{ Value="2",Text="2"},
+                 new SelectListItem{ Value="3",Text="3"},
+                 new SelectListItem{ Value="4",Text="4"},
+                 new SelectListItem{ Value="5",Text="5"},
+                 new SelectListItem{ Value="6",Text="6"},
+                 new SelectListItem{ Value="7",Text="7"},
+                 new SelectListItem{ Value="8",Text="8"},
+                 new SelectListItem{ Value="9",Text="9"},
+                 new SelectListItem{ Value="10",Text="10"},
+                 new SelectListItem{ Value="11",Text="11"},
+                 new SelectListItem{ Value="12",Text="12"},
+                 new SelectListItem{ Value="13",Text="13"},
+                 new SelectListItem{ Value="14",Text="14"},
+                 new SelectListItem{ Value="15",Text="15"},
+                 new SelectListItem{ Value="16",Text="16"},
+                 new SelectListItem{ Value="17",Text="17"},
+                 new SelectListItem{ Value="18",Text="18"},
+                 new SelectListItem{ Value="19",Text="19"},
+                 new SelectListItem{ Value="20",Text="20"},
+                 new SelectListItem{ Value="21",Text="21"},
+                 new SelectListItem{ Value="22",Text="22"},
+                 new SelectListItem{ Value="23",Text="23"},
+                 new SelectListItem{ Value="24",Text="24"},
+                 new SelectListItem{ Value="25",Text="25"},
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+        public static List<SelectListItem> Frequency()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value="Monthly",Text="Monthly"},
+                 new SelectListItem{ Value="Daily",Text="Daily"},
+                 new SelectListItem{ Value="Weekly",Text="Weekly"},
+                 new SelectListItem{ Value="Quarterly",Text="Quarterly"},
+                 new SelectListItem{ Value="Bi-Annually",Text="Bi-Annually"},
+                 new SelectListItem{ Value="Annually",Text="Annually"},
+
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+        public static List<SelectListItem> DurationhoursList()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value="0",Text="NA"},
+                 new SelectListItem{ Value="1",Text="1"},
+                 new SelectListItem{ Value="2",Text="2"},
+                 new SelectListItem{ Value="3",Text="3"},
+                 new SelectListItem{ Value="4",Text="4"},
+                 new SelectListItem{ Value="5",Text="5"},
+                 new SelectListItem{ Value="6",Text="6"},
+                 new SelectListItem{ Value="7",Text="7"},
+                 new SelectListItem{ Value="8",Text="8"},
+                 new SelectListItem{ Value="9",Text="9"},
+                 new SelectListItem{ Value="10",Text="10"},
+                 new SelectListItem{ Value="11",Text="11"},
+                 new SelectListItem{ Value="12",Text="12"},
+                 new SelectListItem{ Value="13",Text="13"},
+                 new SelectListItem{ Value="14",Text="14"},
+                 new SelectListItem{ Value="15",Text="15"},
+                 new SelectListItem{ Value="16",Text="16"},
+                 new SelectListItem{ Value="17",Text="17"},
+                 new SelectListItem{ Value="18",Text="18"},
+                 new SelectListItem{ Value="19",Text="19"},
+                 new SelectListItem{ Value="20",Text="20"},
+                 new SelectListItem{ Value="21",Text="21"},
+                 new SelectListItem{ Value="22",Text="22"},
+                 new SelectListItem{ Value="23",Text="23"},
+                 new SelectListItem{ Value="24",Text="24"},
+                 new SelectListItem{ Value="25",Text="25"},
+                 new SelectListItem{ Value="26",Text="26"},
+                 new SelectListItem{ Value="27",Text="27"},
+                 new SelectListItem{ Value="28",Text="28"},
+                 new SelectListItem{ Value="29",Text="29"},
+                 new SelectListItem{ Value="30",Text="30"},
+                 new SelectListItem{ Value="31",Text="31"},
+                 new SelectListItem{ Value="32",Text="32"},
+                 new SelectListItem{ Value="33",Text="33"},
+                 new SelectListItem{ Value="34",Text="34"},
+                 new SelectListItem{ Value="35",Text="35"},
+                 new SelectListItem{ Value="36",Text="36"},
+                 new SelectListItem{ Value="37",Text="37"},
+                 new SelectListItem{ Value="38",Text="38"},
+                 new SelectListItem{ Value="39",Text="39"},
+                 new SelectListItem{ Value="40",Text="40"},
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+
+        public static List<SelectListItem> Positivedays()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+
+                     new SelectListItem{ Value="1",Text="1"},
+                     new SelectListItem{ Value="2",Text="2"},
+                     new SelectListItem{ Value="3",Text="3"},
+                     new SelectListItem{ Value="4",Text="4"},
+                     new SelectListItem{ Value="5",Text="5"},
+                     new SelectListItem{ Value="6",Text="6"},
+                     new SelectListItem{ Value="7",Text="7"},
+                     new SelectListItem{ Value="8",Text="8"},
+                     new SelectListItem{ Value="9",Text="9"},
+                     new SelectListItem{ Value="10",Text="10"},
+                     new SelectListItem{ Value="11",Text="11"},
+                     new SelectListItem{ Value="12",Text="12"},
+                     new SelectListItem{ Value="13",Text="13"},
+                     new SelectListItem{ Value="14",Text="14"},
+                     new SelectListItem{ Value="15",Text="15"},
+
+                    new SelectListItem{ Value="16",Text="16"},
+                    new SelectListItem{ Value="17",Text="17"},
+                    new SelectListItem{ Value="18",Text="18"},
+                    new SelectListItem{ Value="19",Text="19"},
+                    new SelectListItem{ Value="20",Text="20"},
+                    new SelectListItem{ Value="21",Text="21"},
+                    new SelectListItem{ Value="22",Text="22"},
+                    new SelectListItem{ Value="23",Text="23"},
+                    new SelectListItem{ Value="24",Text="24"},
+                    new SelectListItem{ Value="25",Text="25"},
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+        public static List<SelectListItem> Negativedays()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+            new SelectListItem{ Value="-5",Text="-5"},
+            new SelectListItem{ Value="-4",Text="-4"},
+            new SelectListItem{ Value="-3",Text="-3"},
+            new SelectListItem{ Value="-2",Text="-2"},
+            new SelectListItem{ Value="-1",Text="-1"},
+             };
+            myList = data.ToList();
+            return myList;
+        }
+        public static List<SelectListItem> Daily()
+
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+
+                 new SelectListItem{ Value="1",Text="Same Day"},
+
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+        public static List<SelectListItem> Weekly()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value="0",Text="NA"},
+                 new SelectListItem{ Value="1",Text="1"},
+                  new SelectListItem{ Value="2",Text="2"},
+                   new SelectListItem{ Value="3",Text="3"},
+                    new SelectListItem{ Value="4",Text="4"},
+                     new SelectListItem{ Value="5",Text="5"},
+             };
+            myList = data.ToList();
+            return myList;
+        }
+
+        public static List<SelectListItem> ListPriority()
+        {
+            List<SelectListItem> myList = new List<SelectListItem>();
+            var data = new[]{
+                 new SelectListItem{ Value="Low",Text="Low"},
+                 new SelectListItem{ Value="Medium",Text="Medium"},
+                 new SelectListItem{ Value="High",Text="High"},
+
+             };
+            myList = data.ToList();
+            return myList;
+        }
+    }
+
+
+}
