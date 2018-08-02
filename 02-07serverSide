@@ -1,0 +1,30 @@
+      public JsonResult ListWorkDays( int value =  0)
+        {
+            string Frequency = Session["Frequency"].ToString();
+            if (Frequency == "Daily")
+            {
+                var result=WorkDays.Daily();
+                if(value!=0)
+                {
+                    result = result.Where(x => CheckValue(x.Value, value) == true);
+                }
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+            else
+            {
+                var result = WorkDays.WorkDaysList();
+                if (value != 0)
+                {
+                    result = result.Where(x => CheckValue(x.Value, value) == true);
+                }
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+        }
+
+        public bool CheckValue(string Value, int value)
+                {
+                    Int32 locID = Convert.ToInt32(Value);
+                    return value == locID;
+                }
