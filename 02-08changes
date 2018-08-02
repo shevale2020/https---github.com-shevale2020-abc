@@ -1,0 +1,51 @@
+ // server side changes in  ListWorkDays method 
+ 
+ public JsonResult ListWorkDays( int value =  0)
+        {
+            string Frequency = Session["Frequency"].ToString();
+            if (Frequency == "Daily")
+            {
+                var result=WorkDays.Daily();
+                if(value!=0)
+                {
+                    result = result.Where(x => x.Value >= value);
+                }
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+            else
+            {
+                var result = WorkDays.WorkDaysList();
+                if (value != 0)
+                {
+                    result = result.Where(x => x.Value >= value);
+                }
+                var option = result.Select(c => new { DisplayText = c.Text, Value = c.Value });
+                return Json(new { Result = "OK", Options = option });
+            }
+        }
+        
+        
+        
+        ________________client side changes -- search -  "Internal Due Day" in  tasktemplateview -- make following changes in function   -- here pass  value=' + data.record.IntEndDay
+       
+       
+        
+         IntEndDay: {
+                    title: 'Internal Due Day',
+                    width: '10%',
+                    @*options: '@Url.Action("ListWorkDays", "TaskTemplate")',*@
+                    options: function (data) {
+
+                        if (data.source == 'list') {
+                            data.clearCache();
+                            return '@Url.Action("ListWorkDays", "TaskTemplate")' + '$' + '__RequestVerificationToken:' + $(tokenId).val()
+                        }
+                        if (data.source == 'edit') {
+                            data.clearCache();
+                            return '@Url.Action("ListWorkDays", "TaskTemplate")'+ '?Value=' + data.record.IntEndDay  + '$' + '__RequestVerificationToken:' + $(tokenId).val()
+                        }
+
+                    },
+                    edit: true
+                },
