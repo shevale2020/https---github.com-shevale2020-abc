@@ -1,0 +1,24 @@
+IQueryable <Workitems> workbasketQuery = (context.WorkbasketTaskUsers.Where(a => a.IsDeleted == false
+                                                                && ((IsAdmin) ? true : a.User.SupervisorId == loginedUserId)
+                                                                && a.WorkbasketTask.TenantId == tenantId && a.WorkbasketTask.WorkflowAction.Status != completedStatus
+                                                                && (filter.Task.Length > 0 ? a.WorkbasketTask.TaskName.Contains(filter.Task) : true)
+                                                                && (filter.SelectedUserId > 0 ? a.UserId == filter.SelectedUserId : true)
+                                                                && (filter.SelectedLocationId > 0 ? a.WorkbasketTask.Team.LocationId == filter.SelectedLocationId : true)
+                                                                && (filter.SelectedTeamId > 0 ? a.WorkbasketTask.TeamId == filter.SelectedTeamId : true)
+                                                                && (filter.SelectedPeriodId > 0 ? a.WorkbasketTask.PeriodId == filter.SelectedPeriodId : true)
+                                                                && (filter.RoleId > 0 ? a.User.RoleId == filter.RoleId : true)
+                                                               ) 
+                                                       .Select(a => new Workitems
+                                                       {
+                                                           WorkBasketTaskUserId = a.Id,
+                                                           IntEndDay = a.WorkbasketTask.Task.TaskTemplateusers.Where(x => x.IntEndDay != null && x.IntEndDay != 0).Min(x => x.IntEndDay) ?? 0,
+                                                           DueDate =a.EndDateInt,
+                                                           Id = a.WorkbasketTaskId,
+                                                           TaskName = a.WorkbasketTask.TaskName,
+                                                           TaskAtLevelText = a.WorkbasketTask.Workflow.WorkflowLevels.Where(lvl => lvl.Level == a.WorkbasketTask.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                           // selected user level
+                                                           LoginedUserAssignedAtLevelText = a.WorkbasketTask.Workflow.WorkflowLevels.Where(lvl => lvl.Level == a.WFLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                           User = (a.User.UserName != null ? a.User.UserName + " " + "[" + a.User.LoginId + "]" : " "),
+                                                           TotalRecords = totalRecords
+                                                       }
+                                                              ));
