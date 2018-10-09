@@ -1,0 +1,32 @@
+   public List<Period> GetOpenPeriodsbyTenant(int tenantid)
+        {
+            var period = context.Periods.Where(p => p.TenantId == tenantid && p.IsClosed == false &&  p.PeriodText != null).GroupBy(p=>p.PeriodText).Select(p=> new { p }).ToList();
+
+            //var Period = (from p in context.Periods
+            //            where (p.TenantId == tenantid && p.IsClosed == false && p.PeriodText != null)//Condition changed Rizwan 10 Apr 2017
+            //            select new
+            //            {
+            //                PeriodText = p.PeriodText,
+            //                 Id = p.Id,
+            //            }).ToList().Distinct()
+            //                                    .Select(x => new Period()
+            //                                    {
+            //                                        Id = x.Id,
+            //                                        PeriodText = x.PeriodText
+            //                                    }).GroupBy(p => p.PeriodText);
+            //return Period.OrderBy(a => a.PeriodText).ToList();
+            //var Period =
+            //            from c in context.Periods
+            //            group c by new
+            //            {
+            //                c.PeriodText,
+            //                c.Id
+            //            } into gcs
+            //            select new Period()
+            //            {
+       
+            //                PeriodText = gcs.Key.PeriodText,
+            //                Id = gcs.Key.Id
+            //            };
+            return period;
+        }
