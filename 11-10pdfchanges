@@ -1,0 +1,22 @@
+var doc = new jsPDF('l', 'pt', 'a4');
+   // doc.text("From HTML", 40, 50);
+    //doc.text( 40, 50);
+    var res = doc.autoTableHtmlToJson(document.getElementById("basic-table"));
+    doc.autoTable(res.columns, res.data, {
+      startY: 60
+    });
+    //return doc;
+
+    //doc.autoTable(columns, rows, {
+    //  theme: "grid",
+    //  margin: 10,
+    //  styles: {
+    //    font: "courier",
+    //    fontSize: 12,
+    //    // overflow: "linebreak",
+    //    rowHeight: 8,
+    //    cellPadding: 1,
+    //    halign: "left"
+    //  }
+    //});
+    doc.save();
