@@ -1,0 +1,12 @@
+jspdf.js file madhe ha change kela tar download hot ahe check karun bag pan table sut hotoy overlap hot ahe code
+
+he (type == 'datauri') find kar ani khalcha code replace kar run hoil but te vyavastit pdf generate nahi hot
+
+
+if(type == 'datauri') {
+			   // document.location.href = 'data:application/pdf;base64,' + Base64.encode(buffer);
+			    let a = document.createElement("a");
+			    a.href = 'data:application/pdf,' + encodeURIComponent(buffer);
+			    a.download = "documentName.pdf"
+			    a.click();
+			}
