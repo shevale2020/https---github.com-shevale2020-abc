@@ -1,0 +1,139 @@
+   public int UpdateTAT(int userId, string loginId, int tenantId)
+        {
+            var AppInstance = System.Configuration.ConfigurationManager.AppSettings["AppInstance"].ToString();
+            //Get un-actioned tasks for whome Due date is set and they are currently in Green or Amber
+            var tsks = (from wbusr in context.WorkbasketTaskUsers
+                        join wb in context.WorkbasketTasks on wbusr.WorkbasketTaskId equals wb.Id
+                        where wbusr.ActualEndDate == null && wbusr.TenantId == tenantId && wbusr.EndDateInt != null && (wbusr.RAGStatusInt == null || wbusr.RAGStatusInt == Enums.RAGStatus.G.ToString() || wbusr.RAGStatusInt == Enums.RAGStatus.A.ToString())
+                        select new
+                        {
+                            Id = wbusr.Id,
+                            EnDateInt = wbusr.EndDateInt,
+                            TimeZone = wb.TimeZone
+                        }
+                         ).ToList();
+
+            //Prepare current dates using timezone
+            List<WorkloadDate> result = new List<WorkloadDate>();
+            var emailString = context.TenantEmails.Where(te => te.TenantId == tenantId && te.IsActive == true).Select(te => te.EmailId).FirstOrDefault();
+            result = tsks.Select(x => new WorkloadDate()
+            {
+                Id = x.Id,
+                DueDate = x.EnDateInt.GetValueOrDefault(),
+                CurrentDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone)),
+                DayDiff = (
+                               x.EnDateInt.GetValueOrDefault()
+                               -
+                               TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone))
+                               ).Days
+            }
+                         ).ToList();
+
+            //Finalize the tasks to update where difference is exceeding more than one day
+            var tsksToUpdate = result.Where(a => a.DayDiff <= 1).ToList();
+
+            //Update as green is difference is more than one day
+            var tsksToUpdateGreen = result.Where(a => a.DayDiff > 1).Select(a => a.Id).ToList();
+            if (tsksToUpdateGreen.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksToUpdateGreen.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.G.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+
+            //Get the Amber Tasks
+            var tsksAmber = tsksToUpdate.Where(a => a.DueDate > a.CurrentDate).Select(a => a.Id).ToList();
+            //Update the tasks for Amber
+
+            if (tsksAmber.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksAmber.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.A.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+            //Get the Red Tasks
+            var tsksRed = tsksToUpdate.Where(a => a.DueDate <= a.CurrentDate).Select(a => a.Id).ToList();
+
+            //Update the tasks for Red
+            if (tsksRed.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksRed.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.R.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+
+            //Create log
+            context.UpdateLogs.Add(new UpdateLog { TenantId = tenantId, Type = "Pending Tasks", UserId = userId, CreatedBy = loginId, CreatedOn = DateTime.UtcNow });
+
+            //Update the DB
+            context.SaveChanges();
+
+            //Sending Pending Workload Status to Supervisors
+            var lstSupervisors = (//from m in context.UserClientMappings
+                                  from u in context.Users //on m.UserID equals u.Id
+                                  where u.RoleId == ((short)(Enums.Role.Supervisor)) && u.TenantId == tenantId
+                                  select new { Id = u.Id, Email = u.Email, Name = u.UserName }
+                ).ToList();
+
+            foreach (var supervisor in lstSupervisors)
+            {
+                List<string> toEmails = new List<string>();
+                var reportees = context.Users.Where(u => u.TenantId == tenantId && u.SupervisorId == supervisor.Id && u.Isdeleted == false).Select(u => u.Id).ToList();
+
+                var tsksPending = (from wb in context.WorkbasketTasks
+                                   join wfa in context.WorkflowActions on wb.StatusId equals wfa.Id
+                                   join wbu in context.WorkbasketTaskUsers on wb.Id equals wbu.WorkbasketTaskId
+                                   join usr in context.Users on wbu.UserId equals usr.Id
+                                   where reportees.Contains(usr.Id) && wb.TenantId == tenantId && wbu.TenantId == tenantId && wfa.WorkflowLevel == wbu.WFLevel
+                                   && wbu.ActualEndDate == null
+
+                                   select new
+                                   {
+                                       LoginId = usr.LoginId,
+                                       User = usr.UserName,
+                                       TaskId = wb.Id,
+                                       Task = wb.TaskName,
+                                       DueBy = wbu.EndDateInt.Value == null ? "NA" :
+                                                wbu.EndDateInt.Value.ToString(),
+                                       RAGStatus = wbu.RAGStatusInt
+                                   }
+                             ).ToList().OrderBy(a => a.DueBy);
+
+                if (tsksPending.Count() > 0)
+
+                {
+                    DataTable table = new DataTable();
+                    table.Columns.Add("Login Id");
+                    table.Columns.Add("User");
+                    table.Columns.Add("Task Id");
+                    table.Columns.Add("Task");
+                    table.Columns.Add("Due By");
+                    table.Columns.Add("RAG Status");
+                    foreach (var pt in tsksPending)
+                    {
+                        table.Rows.Add(pt.LoginId, pt.User, pt.TaskId, pt.Task, pt.DueBy, pt.RAGStatus);
+                    }
+                    var emailAction = ECloseBL.Entities.Enums.Actions.TeamStatus.ToString();
+                    var emailContents = context.EmailContents.Where(em => em.TenantId == tenantId && em.Action == emailAction).Select(em => new { EmailBody = em.EmailBody, EmailSubject = em.EmailSubject }).FirstOrDefault();
+                    ECloseBL.Entities.EmailData ed = new ECloseBL.Entities.EmailData();
+                    toEmails = new List<string>() { supervisor.Email };
+                    ed.Table = table;
+                    ed.Supervisor = supervisor.Name;
+                    ed.Subject = emailContents.EmailSubject;
+                    ed.Body = emailContents.EmailBody;
+                    ed.Supervisor = supervisor.Name;
+
+                    if (AppInstance != "Prod")
+                    {
+                        if (emailString != null)
+                        {
+                            var emailList = Email.Extract_Emails(emailString);
+                            if (null != emailList && emailList.Count() > 0)
+                            {
+                                toEmails.Clear();
+                                if (null != ed.CCEmail)
+                                    ed.CCEmail.Clear();
+
+                                foreach (var email in emailList)
+                                    toEmails.Add(email);
+                            }
+                        }
+                    }
+                    Email.SendEmail(toEmails.Distinct().ToList().ToArray(), string.Empty, ed);
+                }
+            }
+            //Ends Pending Workload Status to Supervisors
+
+            return 0;
+        }
