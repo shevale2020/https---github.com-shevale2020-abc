@@ -1,0 +1,27 @@
+    $("#btnSubmit").click(function () {
+        var tokenId = '@Html.AntiForgeryToken()';
+        var ProgressImage = document.getElementById('progress_image');
+        document.getElementById("progress").style.display = 'inline';
+        window.setTimeout(ShowUploadedFile, 1000);
+        function ShowUploadedFile() {
+            $.ajax({
+                url: '@Url.Action("UpdateTAT", "Dashboard")',
+                type: 'POST',
+                dataType: 'json',
+                cache: false,
+                data: {
+                    __RequestVerificationToken: $(tokenId).val()
+                },
+                success: function (data) {
+                    if (data != null && data.Result == "OK") {
+                        document.getElementById("progress").style.display = "none";
+                        ProgressImage.src = ProgressImage.src;
+                        $(BindUpdates());
+                    }
+                }
+
+            });
+            document.getElementById("progress").style.display = "none";
+            ProgressImage.src = ProgressImage.src;
+        }
+    });
