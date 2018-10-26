@@ -1,0 +1,22 @@
+[HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.Reviewer, Enums.Role.Preparer, Enums.Role.TenantAdmin)]
+        public JsonResult UpdateTAT()
+        {
+            int tenantId = SessionWrapper.TenantId;
+            string loginId = SessionWrapper.LoginId;
+            int userId = Convert.ToInt32(SessionWrapper.UserId);
+            try
+            {
+                var response = cls.UpdateTAT(userId, loginId, tenantId);
+                if (response == 0)
+                {
+                    return Json(new { Result = "OK" });
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
