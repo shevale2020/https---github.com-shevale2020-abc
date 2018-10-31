@@ -1,0 +1,514 @@
+@model ECloseWebApp.Models.ViewModelForBusinessUnitDD
+@using ECloseBL.Entities
+@using ECloseWebApp.Models;
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    .multiselect-container {
+        width: 100% !important;
+    }
+
+    .multiselect {
+        width: 100% !important;
+        text-align: LEFT;
+    }
+
+    .btn .caret {
+        float: right !important;
+        margin-top: 5px !important;
+    }
+</style>
+
+<div class="panel panel-white">
+    <div class="panel-body">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="form-group no-m">
+                    <label title="" runat="server">
+                        @LableConstants.LocationLable :
+                    </label>
+                    @Html.DropDownListFor(m => m.Location, Model.Location, new { @class = "form-control" })
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group no-m">
+                    <label title="" runat="server">
+                        @LableConstants.TeamLable :
+                    </label>
+                    @Html.DropDownListFor(m => m.Team, Model.Team, new { @class = "form-control" })
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group no-m">
+                    <label title="" runat="server">
+                        Period :
+                    </label>
+                    @Html.DropDownListFor(m => m.Period, Model.Period, new { @class = "form-control" })
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="form-group no-m">
+                    <label title="" runat="server">
+                        Frequency :
+                    </label>
+                    @Html.ListBoxFor(m => m.Frequency, Model.Frequency, new { @class = "listbox" })
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="panel-footer" style="margin-bottom:25px;">
+        <div id="divCreateBtn">
+            <input type="button" class="btn btn-primary" id="btnSubmit" value="Get Unrolled Task(s)" />
+        </div>
+    </div>
+</div>
+
+<div class="clearfix"></div>
+<div class="" id="RolloverSearchDiv" style="position: absolute;margin-top: -2px; margin-left: 59.2%;z-index: 1;">
+    <div class="row">
+        Task: <input type="text" name="TaskName" id="TaskName" style="height:36.4px;padding-top: 0px;margin-right: 2px;" />
+        <input type="button" class="btn btn-primary" id="LoadRolloverTaskButton" value="@Constants.SearchButtonTitle" style="padding: 7.5px;" />
+        <div class="clearfix"></div>
+    </div>
+    <div class="clearfix"></div>
+</div>
+
+<div class="clearfix"></div>
+
+<div id="divRollover">
+
+    <div class="panel pos-rel">
+        <div id="divbtnincomplte" class="pos-abs zindex10 right-null">
+
+            @using (Html.BeginForm("ToExcel", "Rollover", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+            @Html.AntiForgeryToken();
+            <input type="submit" class="btn btn-danger" id="btnDownload" name="Download" value="Task Not Available for Rollover" />
+
+            }
+        </div>
+
+
+        <div id="divbtndependenat" class="pos-abs zindex10 right-null">
+
+            @using (Html.BeginForm("DependantToExcel", "Rollover", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+            @Html.AntiForgeryToken();
+            <input type="submit" class="btn btn-secondary" id="btnDependant" name="dependant" value="dependant" />
+
+            }
+        </div>
+
+    </div>
+
+
+
+
+</div>
+
+<div id="divbtnrollover" class="panel-footer">
+
+    <input type="submit" class="btn btn-primary" id="btnRollover" name="Rollover[Create Period Task(s)]" value="Rollover [Create Period Task(s)]" />
+
+</div>
+
+
+<div id="progress" class="loading-bg" style="display:none;position:fixed;background:rgba(255, 255, 255, 0.7);width:100%;height:100%;left:0;top:0;z-index:12;">
+    <img id="progress_image" src='@Url.Content("~/Scripts/Template/adminlte/img/loader.gif")' alt="">
+    @*Please wait. Uploading in progress…*@
+</div>
+
+
+
+
+
+
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("#Frequency").val("Monthly");
+        $("#divFilter").hide();
+        $("#moduleName").text('Period Setup / Rollover');
+        $(function () {
+            $('.listbox').multiselect({
+                includeSelectAllOption: true
+            });
+        });
+
+        $(BindEntityList());
+    });
+
+    $('#LoadRecords').click(function () {
+        location.reload();
+    });
+
+
+    $('#inputEntity').hide();
+    $('#LoadRecords').hide();
+    $('#divbtnrollover').hide();
+    $('#divbtnincomplte').hide();
+    $('#divbtndependenat').hide();
+
+
+
+    $('#Location').change(function () {
+        var tokenId = '@Html.AntiForgeryToken()';
+        var LocationId = $(this).val();
+        $.post('@Url.Action("GetPeriodByLocationId", "Rollover")', { LocationId: LocationId, __RequestVerificationToken: $(tokenId).val() },
+        function (results) {
+            $("#Period").empty();
+            $("#Period").append("<option value='0'>--Select--</option>");
+            $.each(results.Options, function (index, value) {
+                $("#Period").append("<option value='" + value.Value + "'>" + value.DisplayText + "</option>");
+
+            });
+        });
+        $.post('@Url.Action("GetTeamByLocationId", "Rollover")', { LocationId: LocationId, __RequestVerificationToken: $(tokenId).val() },
+               function (results) {
+                   $("#Team").empty();
+                   $("#Team").append("<option value='0'>--Select--</option>");
+                   $.each(results.Options, function (index, value) {
+                       $("#Team").append("<option value='" + value.Value + "'>" + value.DisplayText + "</option>");
+                   });
+               });
+
+
+
+    });
+
+
+    $("#btnSubmit").click(function () {
+        $('#divbtnincomplte').hide();
+        colleges.length = 0;
+        if (validatefields()) {
+            var tokenId = '@Html.AntiForgeryToken()';
+            var ddlTeam = $('#Team :selected').val();
+            var Frequency = [];
+
+            $('#Frequency :selected').each(function (i, selected) {
+                Frequency[i] = $(selected).text();
+            });
+            $.ajax({
+                url: '@Url.Action("GetIncomplteTask", "Rollover")',
+                type: 'POST',
+                dataType: 'json',
+                data:{ TeamId: ddlTeam, freqList: Frequency, __RequestVerificationToken: $(tokenId).val() },
+                success: function (data) {
+                    if (data != null && data.Result == "OK") {
+                        if (data.Records.length > 0) {
+                            var Taskcount = data.Records.length;
+                            $('#divbtnincomplte').show();
+                            $('#btnDownload').val(+Taskcount + " " + "Task not available for Rollover");
+                        }
+                    }
+                }
+            });
+            $(BindEntityList());
+            $('#divbtnrollover').show();
+        }
+    });
+
+    function NameValidation(field, rules, i, options) {
+        if (field.val()) {
+            var name = field.val();
+            var filter = @Constants.NameRegex;
+
+            if (filter.test(name)) {
+                return true;
+            }
+            else
+                return "* Invalid format";
+        }
+    }
+
+    function validatefields() {
+        var ddlLocation = $('#Location :selected').text();
+        var ddlTeam = $('#Team :selected').text();
+        var ddlFrequency = $('#Frequency :selected').text();
+        var ddlPeriod = $('#Period :selected').text();
+
+        if (ddlLocation == "" || ddlLocation == "--Select--") {
+
+            Command: toastr["error"]("Kindly select location.");
+            return false;
+        }
+        else if (ddlTeam == "" || ddlTeam == "--Select--") {
+                Command: toastr["error"]("Kindly select team.");
+            return false;
+        }
+
+        else if (ddlPeriod == "" || ddlPeriod == "--Select--") {
+                Command: toastr["error"]("Kindly select period.");
+            return false;
+        }
+        else if (ddlFrequency == "" || ddlFrequency == "None selected") {
+                Command: toastr["error"]("Kindly select frequency.");
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+    var colleges = {};
+    function BindEntityList() {
+        var tokenId = '@Html.AntiForgeryToken()';
+        var Frequency = [] ,Freq;
+        $('#Frequency :selected').each(function (i, selected) {
+            Frequency[i] = $(selected).text();
+        });
+        var postData = { values: Frequency };
+        //Load and Bind User List to jTable
+        $('#divRollover').jtable({
+            title: 'Unrolled Tasks',
+            paging: true,  //Enables paging
+            pageSize: 10, //Actually this is not needed since default value is 10.
+            selecting: true, //Enable selecting
+            multiselect: true, //Allow multiple selecting
+            selectingCheckboxes: true, //Show checkboxes on first column
+            sorting: true,
+            defaultSorting: 'TaskName Desc',
+
+            actions: {
+                //listAction: '@Url.Action("GetRollovertask", "Rollover")'
+                listAction: function (postData, jtParams) {
+                    return $.Deferred(function ($dfd) {
+                        var Frequency = [] ,Freq;
+                        $('#Frequency :selected').each(function (i, selected) {
+                            Frequency[i] = $(selected).text();
+                        });
+
+                        $.ajax({
+                            //url:'@Url.Action("GetRollovertask", "Rollover")',
+                            url: 'Rollover/GetRollovertask?jtStartIndex=' + jtParams.jtStartIndex + '&jtSorting=' + jtParams.jtSorting + '&jtPageSize=' + jtParams.jtPageSize + '&locationId=' + $('#Location :selected').val() + '&TeamId=' + $('#Team :selected').val() + '&PeriodId=' + $('#Period :selected').val() + '&freqList=' + Frequency + '&TaskName=' + $('#TaskName').val(),
+                            type: 'POST',
+                            dataType: 'json',
+                            data: {
+                                __RequestVerificationToken: $(tokenId).val(),
+                            },
+                            success: function (data) {
+                                $dfd.resolve(data);
+                            },
+                            error: function () {
+                                $dfd.reject();
+                            }
+                        });
+                    });
+                },
+            },
+
+            fields: {
+
+
+                Id: {
+                    title: 'ID',
+                    key: true,
+                    create: false,
+                    edit: false,
+                    list: false
+                },
+                TaskName: {
+                    title: '@LableConstants.TaskName',
+                    inputClass: 'validate[maxSize[100] ,funcCall[NameValidation[]]]',
+                    width: '60%',
+                    create: false,
+                    edit: false,
+                    list: true
+                },
+                Frequency: {
+                    title: 'Frequency',
+                    width: '20%',
+                    sorting: false
+
+                },
+                TeamId: {
+                    title: 'Team',
+                    width: '10%',
+                    list: false,
+
+
+                },
+                WorkflowId: {
+                    title: 'Workflow',
+                    width: '20%',
+                    options: '@Url.Action("GetWorkflow", "TaskTemplate")' + '$' + '__RequestVerificationToken:' + $(tokenId).val(),
+                    list: true,
+                    edit: false,
+                    sorting: false
+
+                },
+                IntEndDay: {
+                    title: 'Due Day',
+                    width: '20%',
+                    list: true,
+                    create: false,
+                    edit: false,
+                    sorting: false
+                },
+
+            },
+            //CHILD TABLE DEFINITION FOR "Opco"
+
+            //---
+            selectionChanged: function () {
+
+                // ;
+                var $table = $('#divRollover');
+
+                // Get all currently selected rows
+                var $selectedRows = $table.jtable('selectedRows');
+
+                // DEL - add all non-visible rows to colnew then swap
+                var $colnew = [];
+                for (var i = 0, len = colleges.length; i < len; i++) {
+                    $row = $table.jtable('getRowByKey', colleges[i]);
+                    if (!$row)
+                        $colnew.push(colleges[i]);
+                }
+                colleges = $colnew;
+
+                // ADD - make sure currently selected rows are selected
+                if ($selectedRows.length > 0) {
+                    $selectedRows.each(function () {
+                        var record = $(this).data('record');
+                        if ($.inArray(record.Id, colleges) < 0)
+                            colleges.push(record.Id);
+                    });
+                }
+
+                // UPDATE selection indicator for colleges
+                // $('#email_schools').html(colleges.length);
+            },
+
+
+            rowInserted: function (event, data) {
+                // select those colleges that have been selected in the past
+                if ($.inArray(data.record.Id, colleges) >= 0) {
+                    $('#divRollover').jtable('selectRows', data.row);
+                }
+            },
+            //---
+
+
+            //Initialize validation logic when a form is created
+            formCreated: function (event, data) { data.form.validationEngine(); },
+            //Validate form when it is being submitted
+            formSubmitting: function (event, data) { return data.form.validationEngine('validate'); },
+            //Dispose validation logic when form is closed
+            formClosed: function (event, data) { data.form.validationEngine('hide'); data.form.validationEngine('detach'); },
+
+            recordUpdated: function (event, data) {
+                $('#divRollover').jtable('load');
+            },
+            recordAdded: function (event, data) {
+
+                $('#divRollover').jtable('load');
+            },
+
+
+            recordsLoaded: function (event, data) {
+                //var pagenumber = $('.jtable-goto-page select option:selected').val();
+                //var pagesize = $('.jtable-page-size-change select option:selected').val();
+                //var SrNo = pagesize * pagenumber - pagesize;
+                //if (data.records) {
+                //    $.each(data.records, function (index, record) {
+                //        var row = $('#divRollover').jtable('getRowByKey', record.Id);
+                //        //SrNo++;
+                //        //row.find('td:eq(0)').text(SrNo);
+
+                //    });
+                //}
+            },
+            toolbar: {
+                items: [{
+                    Tooltip: 'Click here to export this table to excel',
+                    text: 'Export to Excel',
+                    click: function () {
+                        window.location = '@Url.Action("ExportToExcelRollover", "Rollover")' + '?jtStartIndex=0' + '&jtPageSize=0' + '&locationId=' + $('#Location :selected').val() + '&TeamId=' + $('#Team :selected').val() + '&PeriodId=' + $('#Period :selected').val() + '&freqList=' + Frequency + '&TaskName=' + $('#TaskName').val();
+                    }
+                }]
+            },
+
+        });
+
+
+        //$('#divRollover').jtable('load');
+        $('#divRollover').jtable('load', { locationId: $('#Location :selected').val(), TeamId: $('#Team').val(), PeriodId: $("#Period").val(), freqList: Frequency });
+
+        $('#LoadRolloverTaskButton').click(function (e) {
+            e.preventDefault();
+            $('#divRollover').jtable('load', {
+                Task: $('#TaskName').val()
+            });
+            //$('#TaskName').val(" ");
+        });
+    }
+
+
+    $('#btnRollover').click(function () {
+        var tokenId = '@Html.AntiForgeryToken()';
+        if (validateallocate()) {
+            //var ProgressImage = document.getElementById('progress_image');
+            //document.getElementById("progress").style.display = 'inline';
+            var TaskIdlist = [];
+            var $selectedRows = $('#divRollover').jtable('selectedRows');
+            if ($selectedRows.length > 0) {
+                $selectedRows.each(function () {
+                    var record = $(this).data('record');
+                    TaskIdlist.push(record.Id);
+                });
+                var ProgressImage = document.getElementById('progress_image');
+                document.getElementById("progress").style.display = 'inline';
+                window.setTimeout(ShowUploadedFile, 1000);
+                function ShowUploadedFile() {
+                    $.ajax({
+
+                        url: '@Url.Action("RolloverTask", "Rollover")',
+                        type: 'POST',
+                        dataType: 'json',
+                        data: { locationId: $('#Location :selected').val(), TeamId: $('#Team').val(), PeriodId: $("#Period").val(), TaskIdList: TaskIdlist, __RequestVerificationToken: $(tokenId).val() },
+                        success: function (data) {
+                            // ;
+                            //$('#divAllocation').jtable('reload');
+                            document.getElementById("progress").style.display = "none";
+                            ProgressImage.src = ProgressImage.src;
+                            $(BindEntityList());
+                            if (data.Records.length > 0) {
+                                Command: toastr["error"]("This task included dependent task .");
+                                $("#btnDependant").click();
+                            }
+
+                            else {
+                                $('#divRollover').jtable('load', { locationId: $('#Location :selected').val(), TeamId: $('#Team').val(), PeriodId: $("#Period").val(), freqList: Frequency });
+                                Command: toastr["success"]("Rollover done successfully.");
+                            }
+                        },
+                        traditional: true,
+                        dataType: "json"
+                    });
+                    document.getElementById("progress").style.display = "none";
+                    ProgressImage.src = ProgressImage.src;
+                    $('#divRollover').jtable('load', { locationId: $('#Location :selected').val(), TeamId: $('#Team').val(), PeriodId: $("#Period").val(), freqList: Frequency });
+                }
+
+            }
+        }
+    });
+
+    function validateallocate() {
+        var $selectedRowslist = $('#divRollover').jtable('selectedRows');
+
+        if ($selectedRowslist.length == 0) {
+            Command: toastr["error"]("Kindly select at least one task for rollover.");
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+</script>
