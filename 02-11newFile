@@ -1,0 +1,65 @@
+     using (eClose_DevEntities context = new eClose_DevEntities())
+                {
+                    {
+                        bool isUserAvalable = context.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && b.EndDateInt <= CurrentDate.Date).Any();
+                        int wFLevel = context.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && b.EndDateInt <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault();
+                        var workBasketTaskList  =
+
+                            (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                               //    && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should match with WorkbasketTask workflow level ie 0
+                                                                 //  && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && (a.WorkflowAction.WorkflowLevel == 0)
+                                                                   && (a.WorkflowAction.Status != completedStatus)
+                                                                   && (!(a.Period.IsClosed))
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   ).ToList());
+                        List<int> workBasketTaskIDs= workBasketTaskList.Select(x=>x.Id).ToList();
+                        var WorkbasketTaskUserList = context.WorkbasketTaskUsers.Where(x => workBasketTaskIDs.Contains(x.WorkbasketTaskId));
+                        var locationList = context.Locations.ToList();
+                        var workbasketQuery = workBasketTaskList.Where(x =>
+                                                                    WorkbasketTaskUserList.Where( b =>b.WorkbasketTaskId==x.Id && b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                   // user level should match with WorkbasketTask workflow level ie 0
+                                                                   && WorkbasketTaskUserList.Where(b => b.WorkbasketTaskId==x.Id && b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).FirstOrDefault().WFLevel == 0
+                                                                
+                                                                   )
+                                                                    .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                          
+                                                                    .Select(c => new Workitems
+                                                           {
+                                                               Id = c.Id,
+                                                               TeamName = locationList.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                               TaskName = c.TaskName,
+                                                               Status = c.WorkflowAction.Status,
+                                                               TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                               TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                               LoginedUserAssignedAtLevel = WorkbasketTaskUserList.Where(b => b.WorkbasketTaskId==c.Id && b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault(),
+                                                               NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                               :WorkbasketTaskUserList.Where(d => d.WorkbasketTaskId==c.Id && d.IsDeleted == false &&
+                                                                                                     d.WFLevel == ((WorkbasketTaskUserList.Where(b => b.WorkbasketTaskId==c.Id && b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                 .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                               TotalRecords = totalRecords,
+                                                               ActionsCanBeTakenAgainstWBTaskId =
+                                                                c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                               CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                              // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                               TenantName = c.Team.Location.Tenant.Name,
+                                                               WorkFlowId = c.WorkflowId,
+                                                               WorkflowName = c.Workflow.WorkflowName,
+                                                               PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                               PeriodYear = c.Period.PeriodYear.ToString(),
+                                                               LastLevelForApproval = WorkbasketTaskUserList.Where(d => d.WorkbasketTaskId==c.Id && d.IsDeleted == false && EntityFunctions.TruncateTime(d.EndDateInt) <= CurrentDate.Date).Count() - 1, // needed for client side validation
+                                                               RAGStatus = WorkbasketTaskUserList.Where(b => b.WorkbasketTaskId==c.Id && b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                               EndDateInt = WorkbasketTaskUserList.Where(b => b.WorkbasketTaskId==c.Id && b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                               Priority = c.Priority1.PriorityName,
+                                                               Description = c.Description,
+                                                               IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                                  ).ToList();
+                }
+               
+            }
