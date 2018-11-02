@@ -1,0 +1,102 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web.Mvc;
+
+namespace ECloseBL.Entities
+{
+    public class Workitems
+    {
+        public int Id { get; set; }
+        public int? WorkBasketTaskUserId { get; set; }
+        public string Status { get; set; }
+        public string TaskNumber { get; set; }
+        public string TeamName { get; set; }
+        public string TaskName { get; set; }
+        public string NextApprover { get; set; }
+        public string FileName { get; set; }
+        public Nullable<System.DateTime> EndDateInt { get; set; }
+
+        public string FormattedEndDateInt { get; set; }
+
+        //public string FormattedEndDateInt
+        //{
+        //    get
+        //    {
+        //        if (EndDateInt == null)
+        //        {
+        //            return "";
+        //        }
+        //        else
+        //        {
+        //            return Convert.ToDateTime(EndDateInt.ToString()).ToString("dd-MMM-yy HH:mm:ss");
+        //        }
+        //    }
+        //}
+        public int? TaskAtLevel { get; set; }
+        public string TaskAtLevelText { get; set; }
+        public int? LoginedUserAssignedAtLevel { get; set; }
+        public string LoginedUserAssignedAtLevelText { get; set; }
+        //field needed to create directory structure for file upload
+        public string PeriodName { get; set; }
+        public string PeriodMonth { get; set; }
+        public string PeriodYear { get; set; }
+
+        public string FunctionName { get; set; }
+        public string TenantName { get; set; }
+
+        // Required fields on approval by reviwer
+        public bool IsLastLvlApproval { get; set; }
+        public int LastLevelForApproval { get; set; }
+        public int ReasonId { get; set; }
+        public string Comments { get; set; }
+        public List<SelectListItem> HoldReasonsOptions { get; set; }
+        public Nullable<bool> CanStart { get; set; }
+        // Required fields on approval/Rejection by Manager
+        public Nullable<int> WorkFlowId { get; set; }
+        public string WorkflowName { get; set; }
+        public int TotalRecords { get; set; }
+        public string RAGStatus { get; set; }
+        // needed for multiple task submission
+        public string ActionSubmittedAgainstWBTaskId { get; set; }
+        public List<SelectListItem> ActionsCanBeTakenAgainstWBTaskId { get; set; }
+        public string User { get; set; }
+        public string Priority { get; set; }
+        public short? PriorityCode { get; set; }
+        public string Description { get; set; }
+        public string ToEmailId { get; set; }
+        public List<string> Supervisors { get; set; }
+        public string IsForcefullyClosed { get; set; }
+        public List<string> UsersAtOtherLevels { get; set; }
+        public bool IsAttachmentRequired { get; set; }
+        public string Location { get; set; }
+        public string DiscardedBy { get; set; }
+        public System.DateTime DiscardedOn { get; set; }
+
+        public DateTime? DueDate { get; set; }
+
+        public int? IntEndDay { get; set; }
+
+        public string FormattedDiscardedOn
+        {
+            get
+            {
+                if (DiscardedOn == null)
+                {
+                    return "";
+                }
+                else
+                {
+                    return Convert.ToDateTime(DiscardedOn.ToString()).ToString("dd-MMM-yy HH:mm:ss");
+                }
+            }
+        }
+        public string ReasonCode { get; set; }
+    }
+    [Serializable]
+    public class WorkitemsList : List<Workitems>
+    { }
+}
