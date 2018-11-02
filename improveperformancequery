@@ -1,4 +1,16 @@
- workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+  if (currentDate != "null")
+                {
+
+                    CurrentDate = Convert.ToDateTime(currentDate);
+                    var workitemList = new List<Workitems>();
+                    var totalRecords = TotalCountOfWorkitemsForPending(tenantId, taskName, userId, userRole, priorityId, periodId, currentDate);
+                    IQueryable<Workitems> workbasketQuery;
+                    using (ECloseContext context = new ECloseContext())
+                    {
+                        if (userRole == preparer)
+                        {
+
+                            workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
                                                                    && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && EntityFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
                                                                    && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
                                                                    // user level should match with WorkbasketTask workflow level ie 0
@@ -43,3 +55,4 @@
                                                                IsAttachmentRequired = c.Tenant.IsAttachmentRequired
                                                            }
                                                                   ));
+                        }
