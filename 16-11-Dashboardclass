@@ -1,0 +1,1492 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using ECloseBL.Entities;
+using System.Web.Mvc;
+using eCloseDataAccessLayer.Models;
+using eCloseDataAccessLayer.Entities;
+using eCloseDataAccessLayer.Utility;
+using EntityFramework.Extensions;
+using System.Data;
+using System.Data.Entity.Core.Objects;
+using System.Data.Entity;
+
+namespace eCloseDataAccessLayer.HelperClasses
+{
+    public class DashboardClass
+    {
+        ECloseContext context = new ECloseContext();
+        private string closeStatus = Enums.WorkbasketAction.Close.ToString();
+        private string allStatus = Enums.WorkbasketAction.All.ToString();
+        private string approveStatus = Enums.WorkbasketAction.Approve.ToString();
+        private string completedStatus = Enums.WorkbasketAction.Completed.ToString();
+        private string DiscardedStatus = Enums.WorkbasketAction.Discarded.ToString();
+        private string holdStatus = Enums.WorkbasketAction.Hold.ToString();
+        private string reviewer = Enums.Role.Reviewer.ToString();
+        private string preparer = Enums.Role.Preparer.ToString();
+        private string supervisor = Enums.Role.Supervisor.ToString();
+
+        #region Public member methods...
+        public List<StatusEntity> ListTATStatusUser(int userId, int tenantId, Int16 priorityId, string periodId)
+        {
+
+
+            List<StatusEntity> outPut = new List<StatusEntity>();
+
+            var workbasket = (from w in context.WorkbasketTasks
+                              join wf in context.WorkflowActions on w.StatusId equals wf.Id
+                              join u in context.WorkbasketTaskUsers on w.Id equals u.WorkbasketTaskId
+                              where u.UserId == userId && u.IsDeleted == false && ((periodId != "0") ? w.Period.PeriodText == periodId : true) && u.TenantId == tenantId && (!(w.Period.IsClosed))
+                              && (priorityId == 0 ? true : w.PriorityId == priorityId)
+                              && w.WorkflowAction.Status != DiscardedStatus
+                              select new
+                              {
+                                  RAGInt = u.RAGStatusInt.Trim(),
+                                  RAGExt = u.RAGStatusExt,
+                                  CurrentLevel = wf.WorkflowLevel,
+                                  UserLevel = u.WFLevel,
+                                  Id = u.Id,
+                                  ActionDate = u.ActualEndDate,
+                                  UserId = u.UserId,
+                                  PriorityId = w.PriorityId,
+                                  Status = w.WorkflowAction.Status
+                              }
+                              )
+                              .ToList();
+
+            //Red Count i.e. TAT Miss and not yet actioned
+            StatusEntity itemRedP = new StatusEntity();
+            itemRedP.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.R.ToString() && a.CurrentLevel == a.UserLevel && a.ActionDate == null && a.Status != completedStatus).Count();
+            outPut.Add(itemRedP);
+
+            //Red Items Actioned
+            StatusEntity itemRedA = new StatusEntity();
+            itemRedA.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.R.ToString() && a.ActionDate != null && (a.Status == completedStatus || a.CurrentLevel > 0)).Count();
+            outPut.Add(itemRedA);
+
+            //Red Count i.e. TAT Miss expected
+            StatusEntity itemRedE = new StatusEntity();
+            itemRedE.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.R.ToString() && a.CurrentLevel < a.UserLevel && a.UserLevel > 0 && a.ActionDate == null).Count();
+            outPut.Add(itemRedE);
+
+
+            //Orange items not yet actioned
+            StatusEntity itemOrangeP = new StatusEntity();
+
+            itemOrangeP.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.A.ToString() && a.CurrentLevel == a.UserLevel && a.ActionDate == null).Count();
+            outPut.Add(itemOrangeP);
+
+            //Orange Count i.e. TAT may Miss expected
+            StatusEntity itemOrangeExpected = new StatusEntity();
+            itemOrangeExpected.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.A.ToString() && a.CurrentLevel < a.UserLevel && a.UserLevel > 0 && a.ActionDate == null).Count();
+            outPut.Add(itemOrangeExpected);
+
+            //Green items not yet actioned  
+            StatusEntity itemGreenP = new StatusEntity();
+            itemGreenP.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.G.ToString() && a.CurrentLevel == a.UserLevel && a.ActionDate == null).Count();
+            outPut.Add(itemGreenP);
+
+            //Green Count i.e. TAT Met  
+            StatusEntity itemGreenA = new StatusEntity();
+            itemGreenA.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.G.ToString() && a.ActionDate != null).Count();
+            outPut.Add(itemGreenA);
+
+            //Green Count i.e. TAT Met Expected
+            StatusEntity itemGreenE = new StatusEntity();
+            itemGreenE.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.G.ToString() && a.CurrentLevel < a.UserLevel && a.UserLevel > 0 && a.ActionDate == null).Count();
+            outPut.Add(itemGreenE);
+
+            //Red Count i.e. TAT Miss expected
+            StatusEntity itemRedExpected = new StatusEntity();
+            itemRedExpected.Count = workbasket.Where(a => a.RAGInt == Enums.RAGStatus.R.ToString() && a.CurrentLevel < a.UserLevel && a.UserLevel > 0).Count();
+            outPut.Add(itemRedExpected);
+
+
+
+
+            return outPut;
+        }
+        public List<UserStatus> ListTATStatusSupervisor(int supervisorId, int tenantId, Int16 priorityId, string periodId)
+        {
+            var reportees = context.Users.Where(u => u.TenantId == tenantId && u.SupervisorId == supervisorId && u.Isdeleted == false).Select(u => u.Id).ToList();
+
+            var workbasket = (from w in context.WorkbasketTasks
+                              join wf in context.WorkflowActions on w.StatusId equals wf.Id
+                              join u in context.WorkbasketTaskUsers on w.Id equals u.WorkbasketTaskId
+                              join usr in context.Users on u.UserId equals usr.Id
+                              where u.IsDeleted == false && ((periodId != "0") ? w.Period.PeriodText == periodId : true) && reportees.Contains(u.UserId ?? 0) && wf.WorkflowLevel == u.WFLevel && w.TenantId == tenantId && (!(w.Period.IsClosed)) &&
+                              (priorityId == 0 ?
+                              true :
+                              w.PriorityId == priorityId)
+                              group u by u.UserId into g
+
+                              select new
+                              {
+
+                                  UserId = g.Key,
+                                  User = g.Where(a => a.User.Id == g.Key).Select(a => a.User.UserName).FirstOrDefault(),
+                                  RCount = g.Where(a => a.RAGStatusInt == "R").Count(),
+                                  ACount = g.Where(a => a.RAGStatusInt == "A").Count(),
+                                  GCount = g.Where(a => a.RAGStatusInt == "G").Count()
+                              }).ToList()
+                             .Select(x => new UserStatus
+                             {
+                                 UserId = x.UserId ?? 0,
+                                 User = x.User,
+                                 RCount = x.RCount,
+                                 ACount = x.ACount,
+                                 GCount = x.GCount
+                             }
+
+                ).Where(a => a.UserId != 0).OrderBy(a => a.User).ToList();
+
+            return workbasket;
+        }
+        public List<StatusEntity> ListTATCountsSupervisor(int supervisorId, int tenantId, Int16 priorityId, string periodId)
+        {
+
+            var reportees = context.Users.Where(u => u.TenantId == tenantId && u.SupervisorId == supervisorId && u.Isdeleted == false).Select(u => u.Id).ToList();
+
+            List<StatusEntity> outPut = new List<StatusEntity>();
+
+
+            var workbasket = (from w in context.WorkbasketTasks
+                              join wf in context.WorkflowActions on w.StatusId equals wf.Id
+                              join u in context.WorkbasketTaskUsers on w.Id equals u.WorkbasketTaskId
+                              where reportees.Contains(u.UserId ?? 0) && ((periodId != "0") ? w.Period.PeriodText == periodId : true) && u.IsDeleted == false && u.TenantId == tenantId && (!(w.Period.IsClosed))
+                              &&
+                              (priorityId == 0 ?
+                              true :
+                              w.PriorityId == priorityId)
+                              select new { RAGInt = u.RAGStatusInt.Trim(), RAGExt = u.RAGStatusExt, CurrentLevel = wf.WorkflowLevel, UserLevel = u.WFLevel, Id = u.Id, ActionDate = u.ActualEndDate }
+                              )
+                              .ToList();
+
+
+            //Red Count i.e. TAT Miss
+
+            StatusEntity itemRedP = new StatusEntity();
+            itemRedP.Count = workbasket.Where(a => a.RAGInt == "R" && a.CurrentLevel == a.UserLevel && a.ActionDate == null).Count();
+            outPut.Add(itemRedP);
+
+            StatusEntity itemRedA = new StatusEntity();
+            itemRedA.Count = workbasket.Where(a => a.RAGInt == "R" && a.CurrentLevel == a.UserLevel && a.ActionDate != null).Count();
+            outPut.Add(itemRedA);
+
+
+            //Orange Count i.e. TAT may Miss
+            StatusEntity itemOrangeP = new StatusEntity();
+
+            itemOrangeP.Count = workbasket.Where(a => a.RAGInt == "A" && a.CurrentLevel == a.UserLevel && a.ActionDate == null).Count();
+            outPut.Add(itemOrangeP);
+
+
+            //Green Count i.e. TAT Met  
+            StatusEntity itemGreenP = new StatusEntity();
+            itemGreenP.Count = workbasket.Where(a => a.RAGInt == "G" && a.CurrentLevel == a.UserLevel && a.ActionDate == null).Count();
+            outPut.Add(itemGreenP);
+
+            //Green Count i.e. TAT Met  
+            StatusEntity itemGreenA = new StatusEntity();
+            itemGreenA.Count = workbasket.Where(a => a.RAGInt == "G" && a.CurrentLevel == a.UserLevel && a.ActionDate != null).Count();
+            outPut.Add(itemGreenA);
+
+            return outPut;
+        }
+
+        public int ResetTATForWorkbasketTask(string loginId, int workbasketTaskId)
+        {
+            var wbUsers = context.WorkbasketTaskUsers.Where(a => a.WorkbasketTaskId == workbasketTaskId).ToList();
+            foreach (var usr in wbUsers)
+            {
+                usr.ActualEndDate = null;
+                usr.UpdatedBy = loginId;
+                usr.UpdatedOn = DateTime.UtcNow;
+            }
+            context.SaveChanges();
+
+            var tsks = (from wbusr in context.WorkbasketTaskUsers
+                        join wb in context.WorkbasketTasks on wbusr.WorkbasketTaskId equals wb.Id
+                        where wb.Id == workbasketTaskId
+
+
+                        select new
+                        {
+                            Id = wbusr.Id,
+                            EnDateInt = wbusr.EndDateInt,
+                            EndExt = wbusr.EndDateExt,
+                            IntimationDateInt = wbusr.IntimationDateInt,
+                            IntimationDateIntExt = wbusr.IntimationDateInt,
+                            TimeZone = wb.TimeZone
+                            // CurrentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(wb.TimeZone))
+                        }
+                         ).ToList();
+
+            //(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(tsk.TimeZone))
+            foreach (var tsk in tsks)
+            {
+                var wb = context.WorkbasketTaskUsers.Find(tsk.Id);
+                DateTime currentTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(tsk.TimeZone));
+
+                if (tsk.EnDateInt > currentTime && currentTime < tsk.IntimationDateInt)
+                    wb.RAGStatusInt = "G";
+                else if (tsk.EnDateInt > currentTime && currentTime > tsk.IntimationDateInt)
+                    wb.RAGStatusInt = "A";
+
+                else if (tsk.EnDateInt < currentTime)
+                    wb.RAGStatusInt = "R";
+
+                if (tsk.EndExt > currentTime && currentTime < tsk.IntimationDateIntExt)
+                    wb.RAGStatusExt = "G";
+                else if (tsk.EndExt > currentTime && currentTime > tsk.EndExt)
+                    wb.RAGStatusExt = "A";
+
+                else if (tsk.EndExt < currentTime)
+                    wb.RAGStatusExt = "R";
+
+                wb.UpdatedBy = loginId;
+                wb.UpdatedOn = DateTime.UtcNow;
+            }
+
+
+            return context.SaveChanges();
+
+        }
+
+        public bool UpdateIsFutureRef(int userId,int userRole,int tenantId)
+        {
+            try
+            {
+                UserRole UserRole = (from x in context.UserRoles
+                                     where x.UserId == userId && x.TenantId == tenantId && x.RoleId == userRole
+                                     select x).FirstOrDefault();
+                if (UserRole != null)
+                {
+                    if (UserRole.IsFutureRef == false)
+                    {
+                        UserRole.IsFutureRef = true;
+                    }
+                    else
+                    {
+                        UserRole.IsFutureRef = false;
+                    }
+                    context.SaveChanges();
+                    return UserRole.IsFutureRef;
+                }
+                else
+                {
+                    bool IsFutureRef = false;
+                    return IsFutureRef;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+           
+
+        }
+        public int UpdateTAT(int userId, string loginId, int tenantId)
+        {
+            var AppInstance = System.Configuration.ConfigurationManager.AppSettings["AppInstance"].ToString();
+            //Get un-actioned tasks for whome Due date is set and they are currently in Green or Amber
+            var tsks = (from wbusr in context.WorkbasketTaskUsers
+                        join wb in context.WorkbasketTasks on wbusr.WorkbasketTaskId equals wb.Id
+                        where wbusr.ActualEndDate == null && wbusr.TenantId == tenantId && wbusr.EndDateInt != null && (wbusr.RAGStatusInt == null || wbusr.RAGStatusInt == Enums.RAGStatus.G.ToString() || wbusr.RAGStatusInt == Enums.RAGStatus.A.ToString())
+                        select new
+                        {
+                            Id = wbusr.Id,
+                            EnDateInt = wbusr.EndDateInt,
+                            TimeZone = wb.TimeZone
+                        }
+                         ).ToList();
+
+            //Prepare current dates using timezone
+            List<WorkloadDate> result = new List<WorkloadDate>();
+            var emailString = context.TenantEmails.Where(te => te.TenantId == tenantId && te.IsActive == true).Select(te => te.EmailId).FirstOrDefault();
+            result = tsks.Select(x => new WorkloadDate()
+            {
+                Id = x.Id,
+                DueDate = x.EnDateInt.GetValueOrDefault(),
+                CurrentDate = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone)),
+                DayDiff = (
+                               x.EnDateInt.GetValueOrDefault()
+                               -
+                               TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById(x.TimeZone))
+                               ).Days
+            }
+                         ).ToList();
+
+            //Finalize the tasks to update where difference is exceeding more than one day
+            var tsksToUpdate = result.Where(a => a.DayDiff <= 1).ToList();
+
+            //Update as green is difference is more than one day
+            var tsksToUpdateGreen = result.Where(a => a.DayDiff > 1).Select(a => a.Id).ToList();
+            if (tsksToUpdateGreen.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksToUpdateGreen.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.G.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+
+            //Get the Amber Tasks
+            var tsksAmber = tsksToUpdate.Where(a => a.DueDate > a.CurrentDate).Select(a => a.Id).ToList();
+            //Update the tasks for Amber
+
+            if (tsksAmber.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksAmber.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.A.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+            //Get the Red Tasks
+            var tsksRed = tsksToUpdate.Where(a => a.DueDate <= a.CurrentDate).Select(a => a.Id).ToList();
+
+            //Update the tasks for Red
+            if (tsksRed.Count > 0)
+                context.WorkbasketTaskUsers.Where(x => tsksRed.Contains(x.Id)).Update(x => new WorkbasketTaskUser { RAGStatusInt = Enums.RAGStatus.R.ToString(), UpdatedBy = loginId, UpdatedOn = DateTime.UtcNow });
+
+
+            //Create log
+            context.UpdateLogs.Add(new UpdateLog { TenantId = tenantId, Type = "Pending Tasks", UserId = userId, CreatedBy = loginId, CreatedOn = DateTime.UtcNow });
+
+            //Update the DB
+            context.SaveChanges();
+
+            //Sending Pending Workload Status to Supervisors
+            var lstSupervisors = (//from m in context.UserClientMappings
+                                  from u in context.Users //on m.UserID equals u.Id
+                                  where u.RoleId == ((short)(Enums.Role.Supervisor)) && u.TenantId == tenantId
+                                  select new { Id = u.Id, Email = u.Email, Name = u.UserName }
+                ).ToList();
+
+            foreach (var supervisor in lstSupervisors)
+            {
+                List<string> toEmails = new List<string>();
+                var reportees = context.Users.Where(u => u.TenantId == tenantId && u.SupervisorId == supervisor.Id && u.Isdeleted == false).Select(u => u.Id).ToList();
+
+                var tsksPending = (from wb in context.WorkbasketTasks
+                                   join wfa in context.WorkflowActions on wb.StatusId equals wfa.Id
+                                   join wbu in context.WorkbasketTaskUsers on wb.Id equals wbu.WorkbasketTaskId
+                                   join usr in context.Users on wbu.UserId equals usr.Id
+                                   where reportees.Contains(usr.Id) && wb.TenantId == tenantId && wbu.TenantId == tenantId && wfa.WorkflowLevel == wbu.WFLevel
+                                   && wbu.ActualEndDate == null
+
+                                   select new
+                                   {
+                                       LoginId = usr.LoginId,
+                                       User = usr.UserName,
+                                       TaskId = wb.Id,
+                                       Task = wb.TaskName,
+                                       DueBy = wbu.EndDateInt.Value == null ? "NA" :
+                                                wbu.EndDateInt.Value.ToString(),
+                                       RAGStatus = wbu.RAGStatusInt
+                                   }
+                             ).ToList().OrderBy(a => a.DueBy);
+
+                if (tsksPending.Count() > 0)
+
+                {
+                    DataTable table = new DataTable();
+                    table.Columns.Add("Login Id");
+                    table.Columns.Add("User");
+                    table.Columns.Add("Task Id");
+                    table.Columns.Add("Task");
+                    table.Columns.Add("Due By");
+                    table.Columns.Add("RAG Status");
+                    foreach (var pt in tsksPending)
+                    {
+                        table.Rows.Add(pt.LoginId, pt.User, pt.TaskId, pt.Task, pt.DueBy, pt.RAGStatus);
+                    }
+                    var emailAction = ECloseBL.Entities.Enums.Actions.TeamStatus.ToString();
+                    var emailContents = context.EmailContents.Where(em => em.TenantId == tenantId && em.Action == emailAction).Select(em => new { EmailBody = em.EmailBody, EmailSubject = em.EmailSubject }).FirstOrDefault();
+                    ECloseBL.Entities.EmailData ed = new ECloseBL.Entities.EmailData();
+                    toEmails = new List<string>() { supervisor.Email };
+                    ed.Table = table;
+                    ed.Supervisor = supervisor.Name;
+                    ed.Subject = emailContents.EmailSubject;
+                    ed.Body = emailContents.EmailBody;
+                    ed.Supervisor = supervisor.Name;
+
+                    if (AppInstance != "Prod")
+                    {
+                        if (emailString != null)
+                        {
+                            var emailList = Email.Extract_Emails(emailString);
+                            if (null != emailList && emailList.Count() > 0)
+                            {
+                                toEmails.Clear();
+                                if (null != ed.CCEmail)
+                                    ed.CCEmail.Clear();
+
+                                foreach (var email in emailList)
+                                    toEmails.Add(email);
+                            }
+                        }
+                    }
+                    Email.SendEmail(toEmails.Distinct().ToList().ToArray(), string.Empty, ed);
+                }
+            }
+            //Ends Pending Workload Status to Supervisors
+
+            return 0;
+        }
+        public List<Workitems> GetWorkitemsForPending(int tenantId, string taskName, int jtStartIndex, int jtPageSize, string jtSorting, int userId, string userRole, int priorityId, string periodId, string currentDate)
+        {
+            try
+            {
+                DateTime CurrentDate;
+                var RoleId = context.Roles.Where(x => x.Name == userRole).Select(x => x.Id).FirstOrDefault();
+               
+                    UserRole UserRole = (from x in context.UserRoles
+                                         where x.UserId == userId && x.TenantId == tenantId && x.RoleId == RoleId
+                                         select x).FirstOrDefault();
+                    bool isFutureRef;
+                    if (UserRole != null)
+                    {
+                        isFutureRef = UserRole.IsFutureRef;
+
+                        if (isFutureRef == true)
+                        {
+                            currentDate = "null";
+                        }
+                        else
+                        {
+                            currentDate = Convert.ToString(DateTime.Now);
+                        }
+                    }
+                else
+                {
+                    isFutureRef = false;
+                    currentDate = Convert.ToString(DateTime.Now);
+                  
+                }
+        
+               
+               
+                if (currentDate != "null")
+                {
+
+                    CurrentDate = Convert.ToDateTime(currentDate);
+                    var workitemList = new List<Workitems>();
+                    var totalRecords = TotalCountOfWorkitemsForPending(tenantId, taskName, userId, userRole, priorityId, periodId, currentDate);
+                    IQueryable<Workitems> workbasketQuery=null;
+                    using (ECloseContext context = new ECloseContext())
+                    {
+                        if (userRole == preparer)
+                        {
+
+                            workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should match with WorkbasketTask workflow level ie 0
+                                                                   && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && (a.WorkflowAction.WorkflowLevel == 0)
+                                                                   && (a.WorkflowAction.Status != completedStatus)
+                                                                   && (!(a.Period.IsClosed))
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   )
+                                                                    .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                           .Select(c => new Workitems
+                                                           {
+                                                               Id = c.Id,
+                                                               TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                               TaskName = c.TaskName,
+                                                               Status = c.WorkflowAction.Status,
+                                                               TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                               TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                               LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault(),
+                                                               NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                               : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                     d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                 .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                               TotalRecords = totalRecords,
+                                                               ActionsCanBeTakenAgainstWBTaskId =
+                                                                c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                               CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                              // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                               TenantName = c.Team.Location.Tenant.Name,
+                                                               WorkFlowId = c.WorkflowId,
+                                                               WorkflowName = c.Workflow.WorkflowName,
+                                                               PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                               PeriodYear = c.Period.PeriodYear.ToString(),
+                                                               LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(d.EndDateInt) <= CurrentDate.Date).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                               EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                               Priority = c.Priority1.PriorityName,
+                                                               Description = c.Description,
+                                                               IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                                  ));
+                        }
+                        else
+                        {
+                            workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                    && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                    && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                    && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() == a.WorkflowAction.WorkflowLevel)
+                                                                    && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                    && (!(a.Period.IsClosed))
+                                                                    && ((a.WorkflowAction.WorkflowLevel == 0) ? (a.WorkflowAction.Status != completedStatus) : true)
+                                                                    )
+                                                                     .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                            .Select(c => new Workitems
+                                                            {
+                                                                Id = c.Id,
+                                                                TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                                TaskName = c.TaskName,
+                                                                Status = c.WorkflowAction.Status,
+                                                                TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                                TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                                LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault(),
+                                                                NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                                : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                      d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                  .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                                TotalRecords = totalRecords,
+                                                                ActionsCanBeTakenAgainstWBTaskId =
+                                                                 c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                 && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                 .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                                CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                               // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                                TenantName = c.Team.Location.Tenant.Name,
+                                                                WorkFlowId = c.WorkflowId,
+                                                                WorkflowName = c.Workflow.WorkflowName,
+                                                                PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                                PeriodYear = c.Period.PeriodYear.ToString(),
+                                                                LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(d.EndDateInt) <= CurrentDate.Date).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                                EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                                Priority = c.Priority1.PriorityName,
+                                                                Description = c.Description,
+                                                                IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                            }
+                                                                   ));
+                        }
+
+                        workitemList = null;
+                        switch (jtSorting.ToLower())
+                        {
+                            case "taskname desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "taskname asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "status desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "status asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "id desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "id asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "formattedenddateint desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            default:
+                                workitemList = workbasketQuery.OrderBy(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                        }
+                        return workitemList;
+                    }
+
+                }
+                else
+                {
+                    
+                    var workitemList = new List<Workitems>();
+                    var totalRecords = TotalCountOfWorkitemsForPending(tenantId, taskName, userId, userRole, priorityId, periodId,currentDate);
+                    IQueryable<Workitems> workbasketQuery=null;
+                    using (ECloseContext context = new ECloseContext())
+                    {
+                        
+                        if (userRole == preparer)
+                        {
+                            workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should match with WorkbasketTask workflow level ie 0
+                                                                   && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && (a.WorkflowAction.WorkflowLevel == 0)
+                                                                   && (a.WorkflowAction.Status != completedStatus)
+                                                                   && (!(a.Period.IsClosed))
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   )
+                                                                    .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                           .Select(c => new Workitems
+                                                           {
+                                                               Id = c.Id,
+                                                               TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                               TaskName = c.TaskName,
+                                                               Status = c.WorkflowAction.Status,
+                                                               TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                               TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                               LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                               NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                               : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                     d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                 .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                               TotalRecords = totalRecords,
+                                                               ActionsCanBeTakenAgainstWBTaskId =
+                                                                c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                               CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                              // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                               TenantName = c.Team.Location.Tenant.Name,
+                                                               WorkFlowId = c.WorkflowId,
+                                                               WorkflowName = c.Workflow.WorkflowName,
+                                                               PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                               PeriodYear = c.Period.PeriodYear.ToString(),
+                                                               LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                               EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                               Priority = c.Priority1.PriorityName,
+                                                               Description = c.Description,
+                                                               IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                                  ));
+                        }
+                        else
+                        {
+                            workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                    && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                    && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                    && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == a.WorkflowAction.WorkflowLevel)
+                                                                    && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                    && (!(a.Period.IsClosed))
+                                                                    && ((a.WorkflowAction.WorkflowLevel == 0) ? (a.WorkflowAction.Status != completedStatus) : true)
+                                                                    )
+                                                                     .OrderBy(p => p.Period.PeriodYear).ThenBy(p => p.Period.PeriodMonth)
+                                                            .Select(c => new Workitems
+                                                            {
+                                                                Id = c.Id,
+                                                                TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                                TaskName = c.TaskName,
+                                                                Status = c.WorkflowAction.Status,
+                                                                TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                                TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                                LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                                NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                                : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                      d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                  .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                                TotalRecords = totalRecords,
+                                                                ActionsCanBeTakenAgainstWBTaskId =
+                                                                 c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                 && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                 .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                                CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                               // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                                TenantName = c.Team.Location.Tenant.Name,
+                                                                WorkFlowId = c.WorkflowId,
+                                                                WorkflowName = c.Workflow.WorkflowName,
+                                                                PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                                PeriodYear = c.Period.PeriodYear.ToString(),
+                                                                LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                                EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                                Priority = c.Priority1.PriorityName,
+                                                                Description = c.Description,
+                                                                IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                            }
+                                                                   ));
+                        }
+
+                        workitemList = null;
+                        switch (jtSorting.ToLower())
+                        {   
+                            case "taskname desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "taskname asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "status desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "status asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "id desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "id asc":
+                                workitemList = workbasketQuery.OrderBy(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            case "formattedenddateint desc":
+                                workitemList = workbasketQuery.OrderByDescending(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                            default:
+                                workitemList = workbasketQuery.OrderBy(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).AsNoTracking().ToList<Workitems>();
+                                break;
+                        }
+                        return workitemList;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public int TotalCountOfWorkitemsForPending(int tenantId, string taskName, int userId, string userRole, int priorityId, string periodId,string currentDate)
+        {
+            try
+            {
+                DateTime CurrentDate;
+                using (ECloseContext context = new ECloseContext())
+                {
+                    if (currentDate != "null")
+                    {
+                        CurrentDate = Convert.ToDateTime(currentDate);
+
+                        if (userRole == preparer)
+                        {
+                            return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                  && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                  && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                  // user level should match with WorkbasketTask workflow level ie 0
+                                                                  && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                  && (a.WorkflowAction.WorkflowLevel == 0)
+                                                                  && (a.WorkflowAction.Status != completedStatus)
+                                                                  && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                  && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   && (!(a.Period.IsClosed))
+                                                                  ).Count();
+                        }
+                        else
+                        {
+                            return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                 && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Any()
+                                                                 && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                 // user level should match with WorkbasketTask workflow level 
+                                                                 && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false && System.Data.Entity.DbFunctions.TruncateTime(b.EndDateInt) <= CurrentDate.Date).Select(b => b.WFLevel).FirstOrDefault() == a.WorkflowAction.WorkflowLevel)
+                                                                 //&& (a.WorkflowAction.WorkflowLevel > 0)
+                                                                 && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                 && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                  && (!(a.Period.IsClosed))
+                                                                 && ((a.WorkflowAction.WorkflowLevel == 0) ? (a.WorkflowAction.Status != completedStatus) : true)
+                                                                 ).Count();
+                        }
+                    }
+                    else
+                    {
+                        if (userRole == preparer)
+                        {
+                            return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should match with WorkbasketTask workflow level ie 0
+                                                                   && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && (a.WorkflowAction.WorkflowLevel == 0)
+                                                                   && (a.WorkflowAction.Status != completedStatus)
+                                                                   && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                    && (!(a.Period.IsClosed))
+                                                                   ).Count();
+                        }
+                        else
+                        {
+                            return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                 && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                 && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                 // user level should match with WorkbasketTask workflow level 
+                                                                 && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == a.WorkflowAction.WorkflowLevel)
+                                                                 //&& (a.WorkflowAction.WorkflowLevel > 0)
+                                                                 && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                 && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                  && (!(a.Period.IsClosed))
+                                                                 && ((a.WorkflowAction.WorkflowLevel == 0) ? (a.WorkflowAction.Status != completedStatus) : true)
+                                                                 ).Count();
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public List<Workitems> GetWorkitemsForNonPending(int tenantId, string taskName, int jtStartIndex, int jtPageSize, string jtSorting, int userId, string userRole, int priorityId, string periodId)
+        {
+            try
+            {
+                var workitemList = new List<Workitems>();
+                var totalRecords = TotalCountOfWorkitemsForNonPending(tenantId, taskName, userId, userRole, priorityId, periodId);
+                IQueryable<Workitems> workbasketQuery;
+                using (ECloseContext context = new ECloseContext())
+                {
+                    if (userRole == preparer)
+                    {
+                        workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should not match with WorkbasketTask workflow level ie 0
+                                                                   && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && ((a.WorkflowAction.Status == completedStatus) || a.WorkflowAction.WorkflowLevel > 0)
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   && (!(a.Period.IsClosed))
+                                                                   )
+                                                           .Select(c => new Workitems
+                                                           {
+                                                               Id = c.Id,
+                                                               TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                               TaskName = c.TaskName,
+                                                               Status = c.WorkflowAction.Status,
+                                                               TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                               TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                               LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                               // next approver will be blank on approve/Close status
+                                                               NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                               : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                     //if logined user lvl not matches task lvl (mostly in case of preparer then show current approver else show next lvl approver)
+                                                                                                     d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                  .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                               TotalRecords = totalRecords,
+                                                               //if (TaskAtLevel != LoginedUserAssignedAtLevel) then no action should be displayed. If status is complted then no actions will be there
+                                                               ActionsCanBeTakenAgainstWBTaskId =
+                                                                c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                               CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                              // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                               TenantName = c.Team.Location.Tenant.Name,
+                                                               WorkFlowId = c.WorkflowId,
+                                                               WorkflowName = c.Workflow.WorkflowName,
+                                                               PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                               PeriodYear = c.Period.PeriodYear.ToString(),
+                                                               LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                               EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                               Priority = c.Priority1.PriorityName,
+                                                               Description = c.Description,
+                                                               IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                                  ));
+                    }
+                    else
+                    {
+                        workbasketQuery = (context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should not match with WorkbasketTask workflow level 
+                                                                   && ((a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != a.WorkflowAction.WorkflowLevel)
+                                                                       || (a.WorkflowAction.WorkflowLevel == 0 && a.WorkflowAction.Status == completedStatus)
+                                                                       ) && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                   && (!(a.Period.IsClosed))
+                                                                   )
+                                                           .Select(c => new Workitems
+                                                           {
+                                                               Id = c.Id,
+                                                               TeamName = context.Locations.Where(r => r.Id == c.Team.LocationId).Select(r => r.LocationName).FirstOrDefault() + "-" + c.Team.TeamName,
+                                                               TaskName = c.TaskName,
+                                                               Status = c.WorkflowAction.Status,
+                                                               TaskAtLevel = c.WorkflowAction.WorkflowLevel,
+                                                               TaskAtLevelText = c.Workflow.WorkflowLevels.Where(lvl => lvl.Level == c.WorkflowAction.WorkflowLevel).Select(lvl => lvl.LevelText).FirstOrDefault(),
+                                                               LoginedUserAssignedAtLevel = c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault(),
+                                                               // next approver will be blank on approve/Close status
+                                                               NextApprover = (c.WorkflowAction.Status == completedStatus || c.WorkflowAction.Status == closeStatus || c.WorkflowAction.Status == approveStatus) ? ""
+                                                               : c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false &&
+                                                                                                     //if logined user lvl not matches task lvl (mostly in case of preparer then show current approver else show next lvl approver)
+                                                                                                     d.WFLevel == ((c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != c.WorkflowAction.WorkflowLevel) ? c.WorkflowAction.WorkflowLevel : c.WorkflowAction.WorkflowLevel + 1))//
+                                                                                                  .Select(e => e.User.UserName + " " + "[" + e.User.LoginId + "]").FirstOrDefault(),
+                                                               TotalRecords = totalRecords,
+                                                               //if (TaskAtLevel != LoginedUserAssignedAtLevel) then no action should be displayed. If status is complted then no actions will be there
+                                                               ActionsCanBeTakenAgainstWBTaskId =
+                                                                c.Workflow.WorkflowActions.Where(a => !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()) && c.WorkflowAction.Status != completedStatus && a.IsDeleted == false && a.WorkflowId == c.WorkflowId && a.WorkflowLevel == c.WorkflowAction.WorkflowLevel && a.IsAction == true
+                                                                                                && (c.WorkflowAction.WorkflowLevel == c.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault()))
+                                                                                                .Select(a => new SelectListItem { Text = a.Status, Value = a.Status }).ToList(),
+                                                               CanStart = !(c.DependetWorkbasketTasks1.Where(d => d.CanStart == false).Any()),// required to decide rendering of action buttons
+                                                                                                                                              // period name required for creating directory for file upload
+                                                               PeriodName = c.Period.PeriodText,
+                                                               TenantName = c.Team.Location.Tenant.Name,
+                                                               WorkFlowId = c.WorkflowId,
+                                                               WorkflowName = c.Workflow.WorkflowName,
+                                                               PeriodMonth = c.Period.PeriodMonth.ToString(),
+                                                               PeriodYear = c.Period.PeriodYear.ToString(),
+                                                               LastLevelForApproval = c.WorkbasketTaskUsers.Where(d => d.IsDeleted == false).Count() - 1, // needed for client side validation
+                                                               RAGStatus = c.WorkbasketTaskUsers.Where(b => b.WFLevel == c.WorkflowAction.WorkflowLevel && b.IsDeleted == false).Select(b => b.RAGStatusInt).FirstOrDefault(),
+                                                               EndDateInt = c.WorkbasketTaskUsers.Where(b => b.IsDeleted == false && b.WFLevel == c.WorkflowAction.WorkflowLevel).Select(b => b.EndDateInt).FirstOrDefault(),
+                                                               Priority = c.Priority1.PriorityName,
+                                                               Description = c.Description,
+                                                               IsAttachmentRequired = c.Tenant.IsAttachmentRequired
+                                                           }
+                                                                  ));
+                    }
+
+
+                    switch (jtSorting.ToLower())
+                    {
+                        case "taskname desc":
+                            workitemList = workbasketQuery.OrderByDescending(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "taskname asc":
+                            workitemList = workbasketQuery.OrderBy(rec => rec.TaskName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "status desc":
+                            workitemList = workbasketQuery.OrderByDescending(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "status asc":
+                            workitemList = workbasketQuery.OrderBy(rec => rec.Status).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "id desc":
+                            workitemList = workbasketQuery.OrderByDescending(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "id asc":
+                            workitemList = workbasketQuery.OrderBy(rec => rec.Id).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "formattedenddateint desc":
+                            workitemList = workbasketQuery.OrderByDescending(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        default:
+                            workitemList = workbasketQuery.OrderBy(rec => rec.EndDateInt).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                    }
+                    return workitemList;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public int TotalCountOfWorkitemsForNonPending(int tenantId, string taskName, int userId, string userRole, int priorityId, string periodId)
+        {
+            try
+            {
+                using (ECloseContext context = new ECloseContext())
+                {
+                    if (userRole == preparer)
+                    {
+                        return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                   // user level should not match with WorkbasketTask workflow level ie 0
+                                                                   && (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() == 0)
+                                                                   && ((a.WorkflowAction.Status == completedStatus) || a.WorkflowAction.WorkflowLevel > 0)
+                                                                   && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                    && (!(a.Period.IsClosed))
+                                                                   ).Count();
+                    }
+                    else
+                    {
+                        return context.WorkbasketTasks.Where(a => a.IsDeleted == false && a.TenantId == tenantId && a.WorkflowAction.Status != DiscardedStatus
+                                                                   && a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Any()
+                                                                   && (taskName.Length > 0 ? a.TaskName.Contains(taskName) : true)
+                                                                    // user level should not match with WorkbasketTask workflow level 
+                                                                    && ((a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() != a.WorkflowAction.WorkflowLevel)
+                                                                       || (a.WorkflowAction.WorkflowLevel == 0 && a.WorkflowAction.Status == completedStatus)
+                                                                       )
+                                                                   //&& (a.WorkbasketTaskUsers.Where(b => b.UserId == userId && b.IsDeleted == false).Select(b => b.WFLevel).FirstOrDefault() > 0)
+                                                                   && ((periodId != "0") ? a.Period.PeriodText == periodId : true)
+                                                                   && ((priorityId > 0) ? a.PriorityId == priorityId : true)
+                                                                    && (!(a.Period.IsClosed))
+                                                                   ).Count();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+        #region "Controller Dashborad Data"
+        public List<StatuSourceData> GetChartData(string periodText, int tenantId, Int16 priorityId, int userId)
+        {
+            //Get Open PeriodIds for period text
+            List<int> periodList = new List<int>();
+            if (periodText != "0")
+            {
+                periodList = context.Periods.Where(p => p.PeriodText == periodText && p.TenantId == tenantId && p.IsClosed == false).Select(a => a.Id).ToList();
+            }
+            else
+            {
+                periodList = context.Periods.Where(p => p.TenantId == tenantId && p.IsClosed == false).Select(a => a.Id).ToList();
+            }
+            List<int> teamList = new List<int>();
+            //Get the location assigned to controller user
+
+            //var controllerLocations = context.LocationFineControllers.Where(a => a.UserId == userId && a.TenantId == tenantId && a.IsDeleted == false).Select(a => a.LocationId).ToList();
+
+            //if (controllerLocations.Count > 0)
+            //    teamList = context.Teams.Where(a => a.IsDeleted == false && controllerLocations.Contains(a.LocationId) && a.TenantId == tenantId).Select(a => a.Id).ToList();
+            //else
+                teamList = context.Teams.Where(a => a.IsDeleted == false && a.TenantId == tenantId).Select(a => a.Id).ToList();
+
+
+
+
+
+            List<int?> nullableperiodList = periodList.Cast<int?>().ToList();
+
+            List<StatuSourceData> lstResult = new List<StatuSourceData>();
+
+
+
+
+            var wbItems = (from wb in context.WorkbasketTasks
+                           join wa in context.WorkflowActions on wb.StatusId equals wa.Id
+                           where nullableperiodList.Contains(wb.PeriodId) && teamList.Contains(wb.TeamId)
+                           && (priorityId == 0 ? true : wb.PriorityId == priorityId)
+                           select new { Id = wb.Id, Status = wa.Status, CurrentLevel = wa.WorkflowLevel }
+                ).ToList();
+
+            //Completed Tasks
+            StatuSourceData itemCompleted = new StatuSourceData();
+            itemCompleted.Label = "Completed";
+            itemCompleted.Value = wbItems.Where(a => a.Status == Enums.WorkbasketAction.Completed.ToString()).Count().ToString();
+            itemCompleted.Color = "#99e5e5";
+            lstResult.Add(itemCompleted);
+
+            //Pending Tasks
+            StatuSourceData itemPending = new StatuSourceData();
+            itemPending.Label = "Yet-To-Start";
+            itemPending.Value = wbItems.Where(a => a.Status == Enums.WorkbasketAction.Pending.ToString() && a.CurrentLevel == 0).Count().ToString();
+            itemPending.Color = "#f7bd83";
+            lstResult.Add(itemPending);
+
+            //Pending Tasks
+            StatuSourceData itemHold = new StatuSourceData();
+            itemHold.Label = "Hold";
+            itemHold.Value = wbItems.Where(a => a.Status == Enums.WorkbasketAction.Hold.ToString()).Count().ToString();
+            itemHold.Color = "#9966FF";
+            lstResult.Add(itemHold);
+
+
+            //WIP Tasks
+            StatuSourceData itemWIP = new StatuSourceData();
+            itemWIP.Label = "In-Progress";
+            itemWIP.Value = (wbItems.Count() - (Convert.ToInt32(itemHold.Value) + Convert.ToInt32(itemPending.Value) + Convert.ToInt32(itemCompleted.Value))).ToString();
+            itemWIP.Color = "#aad2ed";
+            lstResult.Add(itemWIP);
+            return lstResult;
+        }
+        public List<Dashboard_TeamwiseStatus> GetTeamsStatus(string periodText, int tenantId, Int16 priorityId, int userId, string jtSorting)
+        {
+
+            List<int> periodList = new List<int>();
+            List<int> teamList = new List<int>();
+            //Get the location assigned to controller user
+
+            //var controllerLocations = context.LocationFineControllers.Where(a => a.UserId == userId && a.TenantId == tenantId && a.IsDeleted == false).Select(a => a.LocationId).ToList();
+
+            //if (controllerLocations.Count > 0)
+            //    teamList = context.Teams.Where(a => a.IsDeleted == false && controllerLocations.Contains(a.LocationId) && a.TenantId == tenantId).Select(a => a.Id).ToList();
+            //else
+                teamList = context.Teams.Where(a => a.IsDeleted == false && a.TenantId == tenantId).Select(a => a.Id).ToList();
+
+
+            if (periodText != "0")
+            {
+                periodList = context.Periods.Where(p => p.PeriodText == periodText && p.TenantId == tenantId && p.IsClosed == false).Select(a => a.Id).ToList();
+            }
+            else
+            {
+                periodList = context.Periods.Where(p => p.TenantId == tenantId && p.IsClosed == false).Select(a => a.Id).ToList();
+            }
+
+            List<int?> nullableperiodList = periodList.Cast<int?>().ToList();
+
+            var wbItems = (from wb in context.WorkbasketTasks
+                           join wa in context.WorkflowActions on wb.StatusId equals wa.Id
+                           where nullableperiodList.Contains(wb.PeriodId) && teamList.Contains(wb.TeamId)
+                           && (priorityId == 0 ? true : wb.PriorityId == priorityId)
+                           group wb by wb.TeamId into g
+                           select new
+                           {
+                               TeamId = g.Key,
+                               Completed = g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Completed.ToString()).Count(),
+                               Pending = g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Pending.ToString() && a.WorkflowAction.WorkflowLevel == 0).Count(),
+                               Hold = g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Hold.ToString()).Count(),
+                               WIP = (
+                               g.Count() -
+                               (
+                               g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Completed.ToString()).Count()
+                               +
+                               g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Pending.ToString() && a.WorkflowAction.WorkflowLevel == 0).Count()
+                               +
+                               g.Where(a => a.WorkflowAction.Status == Enums.WorkbasketAction.Hold.ToString()).Count()
+                               )
+                               )
+
+                           }
+                ).AsQueryable();
+
+            var resultItems = (from tm in context.Teams
+                               join loc in context.Locations on tm.LocationId equals loc.Id
+                               join wb in wbItems.DefaultIfEmpty() on tm.Id equals wb.TeamId
+                               select new { Location = loc.LocationName, Team = tm.TeamName, Completed = wb.Completed, WIP = wb.WIP, Hold = wb.Hold, Pending = wb.Pending, LocationId = loc.Id, TeamId = tm.Id }
+                              ).ToList()
+                              .Select(x => new Dashboard_TeamwiseStatus()
+                              {
+                                  Location = x.Location,
+                                  Team = x.Team,
+                                  Completed = x.Completed,
+                                  InProgress = x.WIP,
+                                  Hold = x.Hold,
+                                  YetToStart = x.Pending,
+                                  LocationId = x.LocationId,
+                                  TeamId = x.TeamId
+                              }
+                              ).ToList();
+
+            switch (jtSorting.ToLower())
+            {
+                case "location desc":
+                    resultItems = resultItems.OrderByDescending(rec => rec.Location).ToList();
+                    break;
+                case "location asc":
+                    resultItems = resultItems.OrderBy(rec => rec.Location).ToList();
+                    break;
+                case "team asc":
+                    resultItems = resultItems.OrderBy(rec => rec.Team).ToList();
+                    break;
+                case "team desc":
+                    resultItems = resultItems.OrderByDescending(rec => rec.Team).ToList();
+                    break;
+                default:
+                    resultItems = resultItems.OrderByDescending(rec => rec.Location).ToList();
+                    break;
+            }
+            return resultItems;
+        }
+
+        public List<ECloseBL.Entities.OpenPeriodStatusEntity> GetOpenPeriodInfo(int tenantId, int jtStartIndex, int jtPageSize, string jtSorting, string loginId)
+        {
+            try
+            {
+                // var dashboardData = GetMasterCountsForAdminDashboard(tenantId, loginId);
+                using (ECloseContext context = new ECloseContext())
+                {
+
+                    var OpenPeriodInfoList = new List<ECloseBL.Entities.OpenPeriodStatusEntity>();
+                    int TotalRecordCount = (from pt in context.TeamPeriods.Where(x => x.TenantId == tenantId && x.IsClosed == false)
+                                            join tt in context.Teams on pt.TeamId equals tt.Id
+                                            join cc in context.Locations on tt.LocationId equals cc.Id
+                                            join p in context.Periods on pt.PeriodId equals p.Id
+                                            where (p.IsClosed == false)
+                                            select new
+                                            {
+                                                TeamText = tt.TeamName,
+                                                LocationText = cc.LocationName + "  [" + cc.TimeZone + " ]",
+                                                PeriodText = p.PeriodText
+                                            }).Count();
+
+                    var OpenPeriodInfo = (from pt in context.TeamPeriods.Where(x => x.TenantId == tenantId && x.IsClosed == false)
+                                          join tt in context.Teams on pt.TeamId equals tt.Id
+                                          join cc in context.Locations on tt.LocationId equals cc.Id
+                                          join p in context.Periods on pt.PeriodId equals p.Id
+                                          where (p.IsClosed == false)
+                                          select new
+                                          {
+                                              TeamText = tt.TeamName,
+                                              LocationText = cc.LocationName + " [" + cc.TimeZone + " ]",
+                                              PeriodText = p.PeriodText
+                                          }).Select
+                                      (x => new ECloseBL.Entities.OpenPeriodStatusEntity
+                                      {
+                                          LocationName = x.LocationText,
+                                          PeriodName = x.PeriodText,
+                                          //TeamCount = dashboardData.TeamCount,
+                                          //LocationCount = dashboardData.LocationCount,
+                                          //ReviewerCount = dashboardData.ReviewerCount,
+                                          //PreparerCount = dashboardData.PreparerCount,
+                                          TeamName = x.TeamText,
+                                          TotalRecord = TotalRecordCount
+
+                                      }).ToList();
+
+
+                    switch (jtSorting.ToLower())
+                    {
+                        case "teamname desc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderByDescending(rec => rec.TeamName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "teamname asc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderBy(rec => rec.TeamName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "locationname desc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderByDescending(rec => rec.LocationName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "locationname asc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderBy(rec => rec.LocationName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "periodname desc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderByDescending(rec => rec.PeriodName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        case "periodname asc":
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderBy(rec => rec.PeriodName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                        default:
+                            OpenPeriodInfoList = OpenPeriodInfo.OrderBy(rec => rec.PeriodName).Skip(jtStartIndex).Take(jtPageSize).ToList();
+                            break;
+                    }
+
+                    return OpenPeriodInfo;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+
+        public OpenPeriodStatusEntity GetMasterCountsForAdminDashboard(int tenantId, string loginId)
+        {
+            try
+            {
+                var reviwer = Enums.Role.Reviewer.ToString();
+                var preparer = Enums.Role.Preparer.ToString();
+                using (ECloseContext context = new ECloseContext())
+                {
+                    return context.Tenants.Where(a => a.Id == tenantId && a.IsDeleted == false)
+                                                .Select(a => new OpenPeriodStatusEntity
+                                                {
+                                                    TeamCount = context.Teams.Where(t => t.IsDeleted == false && t.TenantId == tenantId).Count(),
+                                                    ReviewerCount = context.UserRoles.Where(u => u.Isdeleted == false && u.Role.Name == reviewer).Count(),
+                                                    PreparerCount = context.UserRoles.Where(u => u.Isdeleted == false && u.Role.Name == preparer).Count(),
+                                                    LocationCount = context.Locations.Where(t => t.IsDeleted == false && t.TenantId == tenantId).Count(),
+                                                }).FirstOrDefault();
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
+        }
+
+        public List<Workitems> GetTATCountReportForSupervisor(int supervisorId, int tenantId, int priorityId, string status, string periodId, int userId = 0)
+        {
+            try
+            {
+                using (ECloseContext context = new ECloseContext())
+                {
+                    var reportees = context.Users.Where(u => u.TenantId == tenantId && u.SupervisorId == supervisorId && u.Isdeleted == false).Select(u => u.Id).ToList();
+                    List<Workitems> outPut = new List<Workitems>();
+                    IQueryable<Workitems> workbasket = (from w in context.WorkbasketTasks
+                                                        join wf in context.WorkflowActions on w.StatusId equals wf.Id
+                                                        join wfl in context.WorkflowLevels on w.WorkflowId equals wfl.WorkflowId
+                                                        join u in context.WorkbasketTaskUsers on w.Id equals u.WorkbasketTaskId
+                                                        where reportees.Contains(u.UserId ?? 0) && u.IsDeleted == false && u.TenantId == tenantId
+                                                        && (!(w.Period.IsClosed))
+                                                        && ((periodId != "0") ? w.Period.PeriodText == periodId : true)
+                                                        && (priorityId == 0 ? true : w.PriorityId == priorityId)
+                                                        && wf.WorkflowLevel == u.WFLevel
+                                                        && wf.WorkflowLevel == wfl.Level
+                                                        && w.WorkflowAction.Status != DiscardedStatus
+                                                        select new Workitems
+                                                        {
+                                                            RAGStatus = u.RAGStatusInt.Trim(),
+                                                            EndDateInt = u.ActualEndDate,
+                                                            Id = w.Id,
+                                                            TeamName = w.Team.TeamName,
+                                                            TaskName = w.TaskName,
+                                                            Status = w.WorkflowAction.Status,
+                                                            Priority = w.Priority1.PriorityName,
+                                                            TaskAtLevelText = wfl.LevelText,
+                                                            User = u.User.UserName,
+                                                            WorkBasketTaskUserId = (u.UserId),
+                                                            PeriodName = w.Period.PeriodText
+                                                        }
+                                      );
+
+                    switch (status)
+                    {
+                        case "itemRedP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemRedA":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.EndDateInt != null).ToList();
+                            break;
+                        case "itemOrangeP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.A.ToString() && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemGreenP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemGreenA":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.EndDateInt != null).ToList();
+                            break;
+                        case "dueDayMissed":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.WorkBasketTaskUserId == userId).ToList();
+                            break;
+                        case "withinDueDay":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.WorkBasketTaskUserId == userId).ToList();
+                            break;
+                    }
+                    return outPut;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public List<Workitems> GetTATCountReportForUser(int userId, int tenantId, int priorityId, string status, string periodId)
+        {
+            try
+            {
+                using (ECloseContext context = new ECloseContext())
+                {
+                    List<Workitems> outPut = new List<Workitems>();
+                    IQueryable<Workitems> workbasket = (from w in context.WorkbasketTasks
+                                                        join wf in context.WorkflowActions on w.StatusId equals wf.Id
+                                                        join wfl in context.WorkflowLevels on w.WorkflowId equals wfl.WorkflowId
+                                                        join u in context.WorkbasketTaskUsers on w.Id equals u.WorkbasketTaskId
+                                                        where u.UserId == userId && u.IsDeleted == false && u.TenantId == tenantId
+                                                        && (!(w.Period.IsClosed))
+                                                        && ((periodId != "0") ? w.Period.PeriodText == periodId : true)
+                                                        && (priorityId == 0 ? true : w.PriorityId == priorityId)
+                                                        && w.WorkflowAction.Status != DiscardedStatus
+                                                        && wf.WorkflowLevel == wfl.Level
+                                                        select new Workitems
+                                                        {
+                                                            RAGStatus = u.RAGStatusInt.Trim(),
+                                                            TaskAtLevel = wf.WorkflowLevel,
+                                                            LoginedUserAssignedAtLevel = u.WFLevel,
+                                                            Id = w.Id,
+                                                            TeamName = w.Team.TeamName,
+                                                            TaskName = w.TaskName,
+                                                            Status = w.WorkflowAction.Status,
+                                                            EndDateInt = u.ActualEndDate,
+                                                            Priority = w.Priority1.PriorityName,
+                                                            TaskAtLevelText = wfl.LevelText,
+                                                            User = w.WorkbasketTaskUsers.Where(a => a.WFLevel == wf.WorkflowLevel).Select(a => a.User.UserName).FirstOrDefault(),
+                                                            PeriodName = w.Period.PeriodText
+                                                        }
+                              );
+
+                    switch (status)
+                    {
+                        case "itemRedP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.TaskAtLevel == a.LoginedUserAssignedAtLevel && a.EndDateInt == null && a.Status != completedStatus).ToList();
+                            break;
+                        case "itemRedA":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.EndDateInt != null).ToList();
+                            break;
+                        case "itemOrangeP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.A.ToString() && a.TaskAtLevel == a.LoginedUserAssignedAtLevel && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemGreenP":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.TaskAtLevel == a.LoginedUserAssignedAtLevel && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemGreenA":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.EndDateInt != null).ToList();
+                            break;
+                        case "itemRedE":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.R.ToString() && a.TaskAtLevel < a.LoginedUserAssignedAtLevel && a.LoginedUserAssignedAtLevel > 0 && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemOrangeE":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.A.ToString() && a.TaskAtLevel < a.LoginedUserAssignedAtLevel && a.LoginedUserAssignedAtLevel > 0 && a.EndDateInt == null).ToList();
+                            break;
+                        case "itemGreenE":
+                            outPut = workbasket.Where(a => a.RAGStatus == Enums.RAGStatus.G.ToString() && a.TaskAtLevel < a.LoginedUserAssignedAtLevel && a.LoginedUserAssignedAtLevel > 0 && a.EndDateInt == null).ToList();
+                            break;
+                    }
+                    return outPut;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public List<Workitems> GetTaskCountReportForController(int tenantId, int priorityId, int userId, int locationId, int teamId, string status, string periodId)
+        {
+            try
+            {
+                using (ECloseContext context = new ECloseContext())
+                {
+                    List<Workitems> outPut = new List<Workitems>();
+                    IQueryable<Workitems> workbasket = (from wb in context.WorkbasketTasks
+                                                        join wfl in context.WorkflowLevels on wb.WorkflowId equals wfl.WorkflowId
+                                                        join wa in context.WorkflowActions on wb.StatusId equals wa.Id
+                                                        where wb.TeamId == teamId /*&& wb.Team.LocationId == locationId*/
+                                                        && (!(wb.Period.IsClosed))
+                                                        && ((periodId != "0") ? wb.Period.PeriodText == periodId : true)
+                                                        && (priorityId == 0 ? true : wb.PriorityId == priorityId)
+                                                        && wa.WorkflowLevel == wfl.Level
+                                                        && wb.WorkflowAction.Status != DiscardedStatus
+                                                        select new Workitems
+                                                        {
+                                                            Id = wb.Id,
+                                                            TeamName = wb.Team.TeamName,
+                                                            TaskName = wb.TaskName,
+                                                            PeriodName = wb.Period.PeriodText,
+                                                            Status = wb.WorkflowAction.Status,
+                                                            Priority = wb.Priority1.PriorityName,
+                                                            TaskAtLevel = wa.WorkflowLevel,
+                                                            TaskAtLevelText = wfl.LevelText,
+                                                            User = wb.WorkbasketTaskUsers.Where(a => a.WFLevel == wa.WorkflowLevel).Select(a => a.User.UserName).FirstOrDefault()
+                                                        }
+                              );
+                    switch (status)
+                    {
+                        case "Completed":
+                            outPut = workbasket.Where(a => a.Status == Enums.WorkbasketAction.Completed.ToString()).ToList();
+                            break;
+                        case "Hold":
+                            outPut = workbasket.Where(a => a.Status == Enums.WorkbasketAction.Hold.ToString()).ToList();
+                            break;
+                        case "YetToStart":
+                            outPut = workbasket.Where(a => a.Status == Enums.WorkbasketAction.Pending.ToString() && a.TaskAtLevel == 0).ToList();
+                            break;
+                        case "InProgress":
+                            outPut = workbasket.Where(a => a.Status != Enums.WorkbasketAction.Completed.ToString()
+                            && !(a.Status == Enums.WorkbasketAction.Pending.ToString() && a.TaskAtLevel == 0)
+                            && a.Status != Enums.WorkbasketAction.Hold.ToString()
+                            ).ToList();
+                            break;
+                    }
+                    return outPut;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        public int AddLoginHistory(LoginHistory entity)
+        {
+            int i = 0;
+            LoginHistory loginHistory = new LoginHistory();
+            if (entity.ActualUserId == null || entity.DemoUserId == null || entity.TenantId == null)
+            {
+                return i;
+            }
+            else
+            {
+                loginHistory.ActualUserId = entity.ActualUserId;
+                loginHistory.DemoUserId = entity.DemoUserId;
+                loginHistory.TenantId = entity.TenantId;
+                loginHistory.CreatedBy = entity.CreatedBy;
+                loginHistory.CreatedOn = entity.CreatedOn;
+                loginHistory.IsFailed = entity.IsFailed;
+
+                context.LoginHistories.Add(loginHistory);
+                context.SaveChanges();
+                return 1;
+            }
+        }
+    }
+}
