@@ -1,0 +1,328 @@
+using eCloseDataAccessLayer.Models;
+using ECloseBL.Entities;
+using ECloseWebApp.BuisnessEntities;
+using ECloseWebApp.HelperClasses;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web.Mvc;
+using ECloseWebApp.Models;
+using eCloseDataAccessLayer.HelperClasses;
+using System.Web;
+
+namespace ECloseWebApp.Controllers
+{
+    [HandleExceptionsAttribute]
+    public class DashboardController : Controller
+    {
+
+        DashboardClass cls = new DashboardClass();
+
+        log4net.ILog logger = log4net.LogManager.GetLogger(typeof(LoginController));  //Declaring Log4Net 
+
+        private string pendingStatus = Enums.WorkbasketAction.Pending.ToString();
+        // GET: Dashboard
+
+        [CustomAuthorization(Enums.Role.Supervisor, Enums.Role.Preparer, Enums.Role.Reviewer)]
+        public ActionResult Index(bool IsSupervisorAsReviewer = false)
+        {
+            int tenantId = SessionWrapper.TenantId;
+            var vm = new ViewModelForBusinessUnitDD();
+            PeriodClass periodCls = new PeriodClass();
+            List<string> periods = periodCls.GetOpenPeriodsForTenant(tenantId);
+
+            if (periods.Count > 0)
+            {
+                foreach (var p in periods)
+                {
+                    vm.OpenPeriods.Add(new SelectListItem { Text = p, Value = p });
+                }
+            }
+            vm.OpenPeriods.Insert(0, new SelectListItem { Text = "--All--", Value = "0" });
+
+            if (IsSupervisorAsReviewer)
+            {
+                ViewBag.Role = Enums.Role.Reviewer.ToString();
+            }
+            else
+            {
+                ViewBag.Role = SessionWrapper.UserRole;
+            }
+
+            LoginHistory entity = new LoginHistory();
+            entity.ActualUserId = SessionWrapper.UserLoginDomainId;
+            entity.DemoUserId = SessionWrapper.LoginId;
+            entity.TenantId = SessionWrapper.TenantId;
+            entity.CreatedBy = SessionWrapper.LoginId;
+            entity.CreatedOn = DateTime.UtcNow;
+            entity.IsFailed = false;
+            var responseData = cls.AddLoginHistory(entity);
+
+            return View(vm);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.Reviewer, Enums.Role.Preparer, Enums.Role.Supervisor)]
+        public JsonResult ListTATStatusUser(short priorityId, string periodId)
+        {
+            int buId = SessionWrapper.TenantId;
+            int userId = SessionWrapper.UserId;
+            try
+            {
+                var users = cls.ListTATStatusUser(userId, buId, priorityId, periodId);
+                if (users != null)
+                {
+                    return Json(new { Result = "OK", Records = users, TotalRecordCount = users.Count() }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.Supervisor)]
+        public JsonResult ListTATStatusSupervisor(Int16 priorityId, string periodId)
+        {
+            int buId = SessionWrapper.TenantId;
+            int supervisorId = SessionWrapper.UserId;
+            try
+            {
+                var users = cls.ListTATStatusSupervisor(supervisorId, buId, priorityId, periodId);
+                if (users != null)
+                {
+                    return Json(new { Result = "OK", Records = users, TotalRecordCount = users.Count() });
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+        #region "Dashboard Workbasket"
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.Supervisor, Enums.Role.Preparer, Enums.Role.Reviewer)]
+        public JsonResult GetWorkbasketItems(string taskName, int jtStartIndex, int jtPageSize, string jtSorting, string statusToGet, string userRole, int priorityId = 0, string periodId = null, string currentDate = null,string flag=null)
+        {
+            try
+            {
+                if (null == SessionWrapper.UserEntity)
+                    return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+                var TenantId = SessionWrapper.TenantId;
+                UserEntity user = SessionWrapper.UserEntity;
+                bool IsFutureRef=false;
+                List<Workitems> workitemsList = new List<Workitems>();
+                if (statusToGet == pendingStatus)
+                {
+                    if (jtPageSize == 10)
+                    {
+                        if (flag == "IsFutureRef")
+                        {
+                            IsFutureRef = cls.UpdateIsFutureRef(SessionWrapper.UserId, SessionWrapper.RoleId, SessionWrapper.TenantId);
+                            workitemsList = cls.GetWorkitemsForPending(TenantId, taskName, jtStartIndex, jtPageSize, jtSorting, user.UserID, userRole, priorityId, periodId, currentDate, IsFutureRef);
+                        }
+                        else
+                        {
+                            workitemsList = cls.GetWorkitemsForPending(TenantId, taskName, jtStartIndex, jtPageSize, jtSorting, user.UserID, userRole, priorityId, periodId, currentDate, IsFutureRef);
+                        }
+                    }
+                    else
+                    {
+                        workitemsList = cls.GetWorkitemsForPending(TenantId, taskName, jtStartIndex, jtPageSize, jtSorting, user.UserID, userRole, priorityId, periodId, currentDate,IsFutureRef);
+                    }
+                  
+                }
+                else
+                {
+                    workitemsList = cls.GetWorkitemsForNonPending(TenantId, taskName, jtStartIndex, jtPageSize, jtSorting, user.UserID, userRole, priorityId, periodId);
+                }
+                if (workitemsList != null)
+                {
+                    foreach (var w in workitemsList)
+                    {
+                        if (SessionWrapper.TenantDateFormat == Constants.USFormat)
+                        {
+                            w.FormattedEndDateInt = (w.EndDateInt != null ? (Convert.ToDateTime(w.EndDateInt.ToString()).ToString("MM/dd/yyyy HH:mm")) : null);
+                        }
+                        else
+                            if (SessionWrapper.TenantDateFormat == Constants.UKFormat)
+                        {
+
+                            w.FormattedEndDateInt = (w.EndDateInt != null ? (Convert.ToDateTime(w.EndDateInt.ToString()).ToString("dd/MM/yyyy HH:mm")) : null);
+                        }
+                        else
+                        {
+
+                            w.FormattedEndDateInt = (w.EndDateInt != null ? (Convert.ToDateTime(w.EndDateInt.ToString()).ToString("dd-MMM-yyyy HH:mm")) : null);
+                        }
+                    }
+                    return Json(new { Result = "OK", Records = workitemsList, TotalRecordCount = workitemsList.Count > 0 ? workitemsList[0].TotalRecords : 0 });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.ToString());
+                return Json(new { Result = "ERROR", Message = ex.Message });
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.Reviewer, Enums.Role.Preparer, Enums.Role.TenantAdmin)]
+        public JsonResult UpdateTAT()
+        {
+            int tenantId = SessionWrapper.TenantId;
+            string loginId = SessionWrapper.LoginId;
+            int userId = Convert.ToInt32(SessionWrapper.UserId);
+            try
+            {
+                var response = cls.UpdateTAT(userId, loginId, tenantId);
+                if (response == 0)
+                {
+                    return Json(new { Result = "OK" });
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+        #endregion
+
+        #region "Admin Dashboard"
+        [HttpGet]
+        [CustomAuthorization(Enums.Role.TenantAdmin)]
+        [Route("DashboardData")]
+        public ActionResult DashboardDataForAdmin()
+        {
+            try
+            {
+                LoginHistory entity = new LoginHistory();
+                entity.ActualUserId = SessionWrapper.UserLoginDomainId;
+                entity.DemoUserId = SessionWrapper.LoginId;
+                entity.TenantId = SessionWrapper.TenantId;
+                entity.CreatedBy = SessionWrapper.LoginId;
+                entity.CreatedOn = DateTime.UtcNow;
+                entity.IsFailed = false;
+                var responseData = cls.AddLoginHistory(entity);
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.ToString());
+                return Json(new { Result = "ERROR", Message = ex.Message });
+            }
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [CustomAuthorization(Enums.Role.TenantAdmin)]
+        public JsonResult GetOpenPeriodsByTenantId(int jtStartIndex, int jtPageSize, string jtSorting)
+        {
+            try
+            {
+                if (null == SessionWrapper.UserEntity)
+                    return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+
+                var openPeriods = cls.GetOpenPeriodInfo(SessionWrapper.TenantId, jtStartIndex, +jtPageSize, jtSorting, SessionWrapper.LoginId);
+                if (openPeriods != null)
+                {
+                    return Json(new { Result = "OK", Records = openPeriods, TotalRecordCount = openPeriods.Count > 0 ? openPeriods[0].TotalRecord : 0 });
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.Error(ex.ToString());
+                return Json(new { Result = "ERROR", Message = ex.Message });
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+
+        [CustomAuthorization(Enums.Role.Supervisor, Enums.Role.Preparer, Enums.Role.Controller, Enums.Role.Reviewer)]
+        public JsonResult GetPriorityOptions(string loginId)
+        {
+            WorkbasketClass workbasketClass = new WorkbasketClass();
+            try
+            {
+                var response = workbasketClass.GetPriorityOptions(loginId);
+                if (response != null)
+                {
+                    return Json(new { Result = "OK", Records = response }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+        [CustomAuthorization(Enums.Role.Supervisor)]
+        public JsonResult ListTATCountsSupervisor(Int16 priorityId, string periodId)
+        {
+            int buId = SessionWrapper.TenantId;
+            int supervisorId = SessionWrapper.UserId;
+            try
+            {
+                var users = cls.ListTATCountsSupervisor(supervisorId, buId, priorityId, periodId);
+                if (users != null)
+                {
+                    return Json(new { Result = "OK", Records = users, TotalRecordCount = users.Count() }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+        [CustomAuthorization(Enums.Role.TenantAdmin, Enums.Role.Controller)]
+        public JsonResult GetMasterCountsForAdminDashboard()
+        {
+            int tenantId = SessionWrapper.TenantId;
+            string loginId = SessionWrapper.LoginId;
+            try
+            {
+                var masterCountForAdmin = cls.GetMasterCountsForAdminDashboard(tenantId, loginId);
+                if (masterCountForAdmin != null)
+                {
+                    return Json(new { Result = "OK", Records = masterCountForAdmin }, JsonRequestBehavior.AllowGet);
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            return Json(new { Result = "ERROR", Message = Constants.ErrorSessionExpired });
+        }
+
+        [CustomAuthorization(Enums.Role.TenantAdmin, Enums.Role.Supervisor, Enums.Role.Preparer, Enums.Role.Reviewer)]
+        public JsonResult AddFileDetails(string loginId, int tenantId, int workbasketTaskId, string fileName, string actionOnFile)
+        {
+            try
+            {
+                WorkbasketClass workbasketClass = new WorkbasketClass();
+                workbasketClass.AddFileDetails(loginId, tenantId, workbasketTaskId, fileName, actionOnFile);
+
+                return Json(new { Result = "OK" });
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+        #endregion
+    }
+}
