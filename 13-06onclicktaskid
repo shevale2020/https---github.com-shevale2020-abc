@@ -1,8 +1,0 @@
- $(".dot").click(function () {
-        var taskid = $(this).text().substring($(this).text().indexOf('(') + 1, $(this).text().indexOf(')'))
-
-        alert(taskid)
-
-        // here you can do the logic of show model popup of that page.
-
-    });

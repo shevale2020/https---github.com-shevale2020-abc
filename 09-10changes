@@ -1,9 +1,0 @@
-var Period =              from c in context.Periods
-			group c by c.PeriodText into gcs
-                        let maxid = gcs.Max(y => y.id)
-                        select new Period()
-                        {
-       
-                            PeriodText = gcs.Key.PeriodText,
-                            Id = maxid 
-                        };

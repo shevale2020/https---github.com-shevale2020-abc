@@ -1,5 +1,0 @@
-    
-    // find below line in this line .Distinct(); is newly added, pleace replace with existing line.
-    
-    
-    DependsOnWorkbasketTaskIdList = list1.list.Where (x=> !WorkbasketTaskIdList.Contains(  x.DependsOnWorkbasketTaskId)).Select( t => t.DependsOnWorkbasketTaskId ).Distinct();

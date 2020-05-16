@@ -1,4 +1,0 @@
-
-                 IEnumerable<int?> WorkbasketTaskIdList= list1.list.Select( t => t.WorkbasketTaskId );
-                IEnumerable<int?> DependsOnWorkbasketTaskIdList;
-                DependsOnWorkbasketTaskIdList = list1.list.Where (x=> !WorkbasketTaskIdList.Contains(  x.DependsOnWorkbasketTaskId)).Select( t => t.DependsOnWorkbasketTaskId ).Distinct();

@@ -1,4 +1,0 @@
-select  (select PeriodId from WorkbasketTask where Id = DependetWorkbasketTasks.WorkbasketTaskId) as period,
-DependetWorkbasketTasks.*
- from DependetWorkbasketTasks where WorkbasketTaskId in (
-select id from  [dbo].[WorkbasketTask])

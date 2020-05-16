@@ -1,5 +1,0 @@
- // search IEnumerable<int?> DependsOnWorkbasketTaskIdList; this line in server side code add below code 
- 
- IEnumerable<int?> WorkbasketTaskIdList= list1.list.Select( t => t.WorkbasketTaskId );// newly added line
-                IEnumerable<int?> DependsOnWorkbasketTaskIdList; // existing line 
-                DependsOnWorkbasketTaskIdList = list1.list.Where (x=> !WorkbasketTaskIdList.Contains(  x.DependsOnWorkbasketTaskId)).Select( t => t.DependsOnWorkbasketTaskId ); // modify logic
